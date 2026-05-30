@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-premia-red: #d32f2f;
+  --color-premia-red-dark: #b71c1c;
+  --color-premia-black: #121212;
+  --color-premia-gray: #757575;
+  --color-premia-white: #ffffff;
+  --color-premia-gold: #d4af37;
+}
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #121212;
+  }
+
+  .dark {
+    --background: #121212;
+    --foreground: #ffffff;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+}
