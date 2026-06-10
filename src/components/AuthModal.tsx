@@ -4,10 +4,31 @@ import { useState } from "react";
 
 interface AuthModalProps {
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function AuthModal({ onClose }: AuthModalProps) {
+export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   const [isRegister, setIsRegister] = useState(false);
+  const [nickname, setNickname] = useState("");
+
+  const handleAuth = (e: React.FormEvent | React.MouseEvent) => {
+    e.preventDefault();
+    // Simulamos un inicio de sesión exitoso guardando en localStorage
+    localStorage.setItem("premia_logged_in", "true");
+    
+    // Si escribió un nickname, lo usamos. Si no, conservamos el que ya tenía o usamos uno por defecto.
+    const existingNickname = localStorage.getItem("premia_nickname");
+    const finalNickname = nickname.trim() ? nickname : (existingNickname || "Usuario Estrella");
+    localStorage.setItem("premia_nickname", finalNickname);
+    
+    window.dispatchEvent(new Event("auth_changed"));
+    
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      onClose();
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all">
@@ -28,10 +49,10 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           </p>
 
           <div className="flex flex-col gap-3 mb-6">
-            <button className="flex items-center justify-center gap-3 w-full py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            <button onClick={handleAuth} className="flex items-center justify-center gap-3 w-full py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <span className="text-lg font-black">G</span> {isRegister ? "Registrarse" : "Iniciar Sesión"} con Google
             </button>
-            <button className="flex items-center justify-center gap-3 w-full py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors bg-[#1877F2] text-white hover:text-white border-transparent">
+            <button onClick={handleAuth} className="flex items-center justify-center gap-3 w-full py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors bg-[#1877F2] text-white hover:text-white border-transparent">
               <span className="text-lg font-bold">f</span> {isRegister ? "Registrarse" : "Iniciar Sesión"} con Facebook
             </button>
           </div>
@@ -42,7 +63,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
             <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
           </div>
 
-          <form className="flex flex-col gap-4">
+          <form onSubmit={handleAuth} className="flex flex-col gap-4">
             {isRegister && (
               <>
                 <div>
@@ -51,18 +72,11 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                   </label>
                   <input
                     type="text"
+                    required
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] focus:ring-2 focus:ring-premia-red outline-none transition-all"
                     placeholder="Ej. Campeón23"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
-                    Dirección (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] focus:ring-2 focus:ring-premia-red outline-none transition-all"
-                    placeholder="Ingresa tu dirección principal"
                   />
                 </div>
               </>
@@ -74,6 +88,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
               </label>
               <input
                 type="email"
+                required
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] focus:ring-2 focus:ring-premia-red outline-none transition-all"
                 placeholder="tu@email.com"
               />
@@ -85,13 +100,14 @@ export default function AuthModal({ onClose }: AuthModalProps) {
               </label>
               <input
                 type="password"
+                required
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] focus:ring-2 focus:ring-premia-red outline-none transition-all"
                 placeholder="••••••••"
               />
             </div>
 
             <button
-              type="button"
+              type="submit"
               className="w-full py-3 mt-2 bg-premia-red hover:bg-premia-red-dark text-white font-bold rounded-lg transition-colors"
             >
               {isRegister ? "Registrarse" : "Entrar"}

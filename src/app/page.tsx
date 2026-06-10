@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import MiniIA from "../components/MiniIA";
+import { SplineScene } from "../components/SplineScene";
 
 // Custom hook for Scroll Animations
 function useScrollReveal() {
@@ -46,6 +47,21 @@ function RevealOnScroll({ children, delay = 0, className = "" }: { children: Rea
   );
 }
 
+// Custom hook for Scroll Y Position (Parallax)
+function useScrollY() {
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return scrollY;
+}
+
 // Slides Configuration (Images and Videos supported)
 const HERO_SLIDES = [
   {
@@ -53,10 +69,11 @@ const HERO_SLIDES = [
     highlight: "Reconocimiento",
     subtitle: "Ideal",
     desc: "Diseñamos y fabricamos los trofeos, medallas y plaquetas más premium de Centro América.",
-    button: "Ver Catálogo",
-    type: "image", // Cambiar a "video" y usar ruta local (ej. "/videos/maraton.mp4") cuando tengas el archivo
-    src: "https://images.unsplash.com/photo-1530143311094-34d807799e8f?q=80&w=1920&auto=format&fit=crop", // Marathon running
-    bg: "bg-black",
+    button: "Explorar Modelo 3D",
+    type: "spline", 
+    src: "https://prod.spline.design/zbWkue63YRffMYty/scene.splinecode", 
+    bg: "bg-[#050505]",
+    href: "#mini-ia",
   },
   {
     title: "Ofertas de",
@@ -65,8 +82,9 @@ const HERO_SLIDES = [
     desc: "Aprovecha descuentos especiales en la línea corporativa y deportiva por tiempo limitado.",
     button: "Ver Promociones",
     type: "image",
-    src: "https://images.unsplash.com/photo-1574629810360-7efbb6b6ac48?q=80&w=1920&auto=format&fit=crop", // Placeholder Gold/Trophy Image
+    src: "/ofertas.png", 
     bg: "bg-[#800000]",
+    href: "/vidrios",
   },
   {
     title: "Descubre los",
@@ -74,21 +92,23 @@ const HERO_SLIDES = [
     subtitle: "2026",
     desc: "Acabados vanguardistas en cristal y metal para premiar la excelencia al más alto nivel.",
     button: "Ver Colección",
-    type: "image", // Cambiar a "video" cuando tengas el archivo MP4
+    type: "image",
     src: "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1920&auto=format&fit=crop", // Cycling winner
     bg: "bg-[#0a0a0a]",
+    href: "#categorias",
   }
 ];
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const scrollY = useScrollY();
 
   // Auto-slide effect
   useEffect(() => {
     const timer = setInterval(() => {
       handleNextSlide();
-    }, 8000); // 8 seconds per slide
+    }, 5000); // 5 seconds per slide
     return () => clearInterval(timer);
   }, [currentSlide]);
 
@@ -96,6 +116,13 @@ export default function Home() {
     if (isAnimating) return;
     setIsAnimating(true);
     setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    setTimeout(() => setIsAnimating(false), 1200);
+  };
+
+  const handlePrevSlide = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
     setTimeout(() => setIsAnimating(false), 1200);
   };
 
@@ -110,7 +137,7 @@ export default function Home() {
     <>
       <Header />
       
-      {/* HERO SECTION - MEDIA CAROUSEL (IMAGES / VIDEOS) */}
+      {/* HERO SECTION - MEDIA CAROUSEL (IMAGES / VIDEOS / SPLINE) */}
       <section className="relative w-full min-h-[85vh] flex items-center overflow-hidden bg-black">
         {HERO_SLIDES.map((slide, index) => (
           <div 
@@ -121,7 +148,14 @@ export default function Home() {
           >
             {/* Background Media */}
             <div className="absolute inset-0 w-full h-full overflow-hidden">
-              {slide.type === "video" ? (
+              {slide.type === "spline" ? (
+                <div 
+                  className="absolute inset-0 w-full h-full lg:w-[60%] lg:left-[40%] cursor-grab active:cursor-grabbing will-change-transform"
+                  style={{ transform: `translateY(${scrollY * 0.4}px)` }}
+                >
+                  <SplineScene scene={slide.src} className="w-full h-full" />
+                </div>
+              ) : slide.type === "video" ? (
                 <video 
                   autoPlay 
                   loop 
@@ -139,12 +173,13 @@ export default function Home() {
               )}
             </div>
             
-            {/* Ambient Background Glow (Red Tint Overlay) */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-[#d32f2f]/10"></div>
+            {/* Ambient Background Glow (Red Tint Overlay) - pointer-events-none allows clicks to pass through to 3D */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent pointer-events-none"></div>
             
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full py-20">
+            {/* The wrapper is pointer-events-none to let you drag the 3D model anywhere, but pointer-events-auto on the text box */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full py-20 pointer-events-none">
               {/* Text Content with staggered fade-in */}
-              <div className="flex flex-col gap-6 text-white max-w-2xl">
+              <div className="flex flex-col gap-6 text-white max-w-2xl pointer-events-auto">
                 <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight uppercase overflow-hidden">
                   <span className={`block transition-all duration-[1200ms] ease-out ${index === currentSlide ? "translate-y-0 opacity-100" : "translate-y-[100%] opacity-0"}`}>
                     {slide.title}
@@ -162,7 +197,7 @@ export default function Home() {
                 </p>
                 
                 <div className={`mt-4 transition-all duration-1000 delay-700 ${index === currentSlide ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-                  <Link href="/store" className="inline-flex items-center justify-center px-10 py-4 bg-[#d32f2f] text-white hover:bg-red-800 font-black uppercase tracking-widest rounded-none shadow-2xl transition-all duration-500 group">
+                  <Link href={slide.href || "/store"} className="inline-flex items-center justify-center px-10 py-4 bg-[#d32f2f] text-white hover:bg-red-800 font-black uppercase tracking-widest rounded-none shadow-2xl transition-all duration-500 group">
                     <span className="relative overflow-hidden">
                       <span className="inline-block transition-transform duration-500 group-hover:-translate-y-full">{slide.button}</span>
                       <span className="inline-block absolute left-0 top-0 translate-y-full transition-transform duration-500 group-hover:translate-y-0">{slide.button}</span>
@@ -174,6 +209,18 @@ export default function Home() {
             </div>
           </div>
         ))}
+
+        {/* INVISIBLE NAVIGATION BUTTONS */}
+        <button 
+          className="absolute left-0 top-0 w-[15%] h-full z-40 cursor-w-resize bg-transparent" 
+          onClick={handlePrevSlide}
+          aria-label="Anterior"
+        />
+        <button 
+          className="absolute right-0 top-0 w-[15%] h-full z-40 cursor-e-resize bg-transparent" 
+          onClick={handleNextSlide}
+          aria-label="Siguiente"
+        />
 
         {/* Carousel Controls */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-30 flex gap-4">
@@ -202,39 +249,41 @@ export default function Home() {
             </div>
           </RevealOnScroll>
 
-          {/* Exact categories requested: Vidrios, Medallas, Plaquetas MDF, Trofeos, PLS */}
+          {/* Exact categories requested: Vidrios, Medallas, Plaquetas MDF, Trofeos, PLS, Botones */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { title: "Vidrios", icon: "💎", desc: "La más alta sofisticación en reconocimientos corporativos. Grabados en alta resolución." },
-              { title: "Medallas", icon: "🏅", desc: "Forjadas con precisión milimétrica. Opciones personalizadas o genéricas para eventos de toda magnitud." },
-              { title: "Plaquetas MDF", icon: "📜", desc: "Tributo atemporal con acabados premium en maderas nobles combinadas con acrílico y metal." },
-              { title: "Trofeos", icon: "🏆", desc: "Estructuras imponentes diseñadas para celebrar campeonatos, torneos y logros legendarios." },
-              { title: "PLS (Plasmas)", icon: "💠", desc: "Figuras especializadas, estéticas y versátiles para todas las disciplinas deportivas y académicas." },
+              { title: "Vidrios", image: "/categorias/vidrio.png", desc: "La más alta sofisticación en reconocimientos corporativos. Grabados en alta resolución.", href: "/vidrios" },
+              { title: "Medallas", image: "/categorias/medallas.png", desc: "Forjadas con precisión milimétrica. Opciones personalizadas o genéricas para eventos de toda magnitud.", href: "/medallas/builder" },
+              { title: "Plaquetas MDF", image: "/categorias/plaquetas.png", desc: "Tributo atemporal con acabados premium en maderas nobles combinadas con acrílico y metal.", href: "/plaquetas" },
+              { title: "Trofeos", image: "/categorias/trofeos.png", desc: "Estructuras imponentes diseñadas para celebrar campeonatos, torneos y logros legendarios.", href: "/trofeos" },
+              { title: "PLS (Plasmas)", image: "/categorias/plasmas.png", desc: "Figuras especializadas, estéticas y versátiles para todas las disciplinas deportivas y académicas.", href: "/trofeos-plasma/builder" },
+              { title: "Botones", image: "/categorias/botones.png", desc: "Pines y botones promocionales de alta calidad para distinguir a tu equipo en cualquier evento.", href: "/botones" },
             ].map((prod, index) => (
-              <RevealOnScroll key={index} delay={index * 150} className={`${index === 4 ? "md:col-span-2 lg:col-span-1" : ""}`}>
-                <div className="group relative bg-gray-50 dark:bg-[#161616] h-[400px] rounded-none overflow-hidden shadow-lg hover:shadow-[0_20px_50px_rgba(211,47,47,0.15)] transition-all duration-[800ms] flex flex-col justify-end p-10 cursor-pointer border-b-4 border-transparent hover:border-[#d32f2f]">
+              <RevealOnScroll key={index} delay={index * 150}>
+                <Link href={prod.href} className="group relative bg-gray-50 dark:bg-[#161616] h-[400px] rounded-none overflow-hidden shadow-lg hover:shadow-[0_20px_50px_rgba(211,47,47,0.15)] transition-all duration-[800ms] flex flex-col justify-end p-10 cursor-pointer border-b-4 border-transparent hover:border-[#d32f2f] block">
+                  {/* Background Image */}
+                  <img src={prod.image} alt={prod.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-110 transition-all duration-[1200ms] z-0 bg-white" />
+                  
+                  {/* Gradient Overlay to make text readable */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 transition-opacity duration-700 group-hover:opacity-0"></div>
+
                   {/* Hover background slide */}
                   <div className="absolute inset-0 bg-[#d32f2f] translate-y-[100%] group-hover:translate-y-0 transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] z-10 opacity-95"></div>
                   
-                  {/* Floating Icon Base */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 group-hover:opacity-10 group-hover:scale-150 transition-all duration-1000 z-0">
-                    <span className="text-[150px]">{prod.icon}</span>
-                  </div>
-                  
                   {/* Content */}
                   <div className="relative z-20 w-full transform group-hover:-translate-y-6 transition-transform duration-700">
-                    <h3 className="font-black text-3xl text-black dark:text-white group-hover:text-white transition-colors duration-500 uppercase tracking-tight mb-4">
+                    <h3 className="font-black text-3xl text-white group-hover:text-white transition-colors duration-500 uppercase tracking-tight mb-4 drop-shadow-lg">
                       {prod.title}
                     </h3>
                     
                     {/* Detailed Description */}
                     <div className="overflow-hidden">
-                      <p className="text-gray-500 dark:text-gray-400 group-hover:text-white/90 transition-colors duration-500 text-base leading-relaxed transform opacity-0 group-hover:opacity-100 translate-y-8 group-hover:translate-y-0 transition-all duration-700 delay-100">
+                      <p className="text-gray-300 group-hover:text-white/90 transition-colors duration-500 text-base leading-relaxed transform opacity-0 group-hover:opacity-100 translate-y-8 group-hover:translate-y-0 transition-all duration-700 delay-100">
                         {prod.desc}
                       </p>
                     </div>
                   </div>
-                </div>
+                </Link>
               </RevealOnScroll>
             ))}
           </div>
@@ -246,30 +295,53 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <RevealOnScroll>
             <div className="text-center mb-24">
-              <span className="text-[#d32f2f] font-black text-sm uppercase tracking-[0.3em]">Lo Más Buscado</span>
+              <span className="text-[#d32f2f] font-black text-sm uppercase tracking-[0.3em]">Destacados</span>
               <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-black dark:text-white mt-4">
-                Productos Destacados
+                Lo Más Buscado
               </h2>
             </div>
           </RevealOnScroll>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {[
-              { name: "Copa del Mundo", emoji: "🌍🏆", desc: "El galardón definitivo para torneos. Fabricado en resina de alta densidad con baño dorado." },
-              { name: "Medalla de Natación", emoji: "🏊‍♂️🏅", desc: "Pieza sólida y pesada con acabado metálico, incluyendo relieves esculpidos con precisión." },
-              { name: "Trofeo Basquetball", emoji: "🏀🏆", desc: "Diseño dinámico que inmortaliza el enceste. Construcción aerodinámica profesional." }
+              { 
+                name: "Vidrio Hexágono", 
+                img: "/categorias/vidrio hexagono.png", 
+                desc: "Corte geométrico de 6 lados con base de mármol. Incluye grabado láser premium en placa dorada.",
+                link: "/vidrios/builder?model=hexagono"
+              },
+              { 
+                name: "Trofeo Columna Deportiva", 
+                img: "/categorias/RF11.png", 
+                desc: "Trofeo de columna personalizable ideal para torneos y competiciones deportivas de alto nivel.",
+                link: "/trofeos/builder?model=futbol"
+              },
+              { 
+                name: "Plaqueta de Reconocimiento", 
+                img: "/categorias/plaqueta.png", 
+                desc: "Elegante plaqueta de madera y metal, perfecta para honrar trayectorias y logros corporativos.",
+                link: "/plaquetas/builder"
+              }
             ].map((item, index) => (
               <RevealOnScroll key={index} delay={index * 200}>
-                <div className="group bg-white dark:bg-[#161616] rounded-none overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-4">
-                  <div className="aspect-square bg-gray-100 dark:bg-[#111] flex items-center justify-center relative overflow-hidden group-hover:bg-[#1a1a1a] transition-colors duration-700">
-                    <span className="text-9xl group-hover:scale-125 transition-transform duration-[1500ms] ease-out drop-shadow-2xl">{item.emoji}</span>
+                <div className="group bg-white dark:bg-[#161616] rounded-none overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 flex flex-col h-full relative">
+                  
+                  {/* Etiqueta Lo Más Vendido */}
+                  <div className="absolute top-4 right-4 bg-[#d32f2f] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 z-20 shadow-lg">
+                    Lo Más Vendido
                   </div>
-                  <div className="p-10 text-center">
-                    <h3 className="font-black text-2xl text-black dark:text-white mb-4 uppercase">{item.name}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">{item.desc}</p>
-                    <button className="w-full py-4 border-2 border-black dark:border-white text-black dark:text-white font-bold uppercase tracking-widest hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-colors duration-300">
-                      Ver Detalles
-                    </button>
+
+                  <Link href={item.link} className="aspect-square bg-white dark:bg-[#111] flex items-center justify-center relative overflow-hidden p-8 cursor-pointer block">
+                    <img src={item.img} alt={item.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-[1500ms] ease-out" />
+                  </Link>
+                  <div className="p-10 text-center flex flex-col flex-1 justify-between">
+                    <div>
+                      <h3 className="font-black text-2xl text-black dark:text-white mb-4 uppercase">{item.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">{item.desc}</p>
+                    </div>
+                    <Link href={item.link} className="w-full block py-4 border-2 border-black dark:border-white text-black dark:text-white font-bold uppercase tracking-widest hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-colors duration-300">
+                      Personalizar
+                    </Link>
                   </div>
                 </div>
               </RevealOnScroll>
