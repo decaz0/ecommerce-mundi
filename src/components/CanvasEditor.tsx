@@ -17,6 +17,7 @@ export interface CanvasElement {
   text?: string;
   fontSize?: number;
   isCurved?: boolean;
+  curveDirection?: "up" | "down";
   color?: string;
   fontFamily?: string;
   fontStyle?: "Normal" | "Bold" | "Italic";
@@ -150,7 +151,14 @@ const DraggableElement: React.FC<DraggableProps> = ({ element, isSelected, onSel
 
       {element.type === "text" && element.isCurved && (
         <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-          <path id={`curve-${element.id}`} d={`M 0,${element.height / 2} A ${element.width / 2},${element.width / 2} 0 0,1 ${element.width},${element.height / 2}`} fill="transparent" />
+          <path 
+            id={`curve-${element.id}`} 
+            d={element.curveDirection === 'down' 
+              ? `M 0,0 A ${element.width / 2},${element.height} 0 0,0 ${element.width},0`
+              : `M 0,${element.height} A ${element.width / 2},${element.height} 0 0,1 ${element.width},${element.height}`
+            } 
+            fill="transparent" 
+          />
           <text fontSize={element.fontSize || 24} fill={element.text ? (element.color || '#000') : (readOnly ? 'transparent' : 'transparent')} fontWeight={fontWeight} fontStyle={fontStyleCss} fontFamily={element.fontFamily || 'serif'}>
             <textPath href={`#curve-${element.id}`} startOffset="50%" textAnchor="middle">
               {element.text ? element.text : (readOnly ? "" : "")}

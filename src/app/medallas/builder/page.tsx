@@ -434,14 +434,22 @@ function MedallasBuilderContent() {
                   </select>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">2. Color de Cinta:</span>
-                  <select value={ribbon} onChange={(e) => setRibbon(e.target.value as RibbonColor)} className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg p-4 font-bold outline-none text-base">
-                    <option value="Rojo">Rojo</option>
-                    <option value="Azul">Azul</option>
-                    <option value="Blanco">Blanco</option>
-                    <option value="Nacional">Nacional (Bandera)</option>
-                    <option value="Negro">Negro</option>
-                  </select>
+                  <span className="text-xs font-bold text-gray-500 uppercase mb-3 block">2. Color de Cinta (Listón):</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["Rojo", "Azul", "Blanco", "Nacional", "Negro"] as RibbonColor[]).map((r) => (
+                      <button 
+                        key={r}
+                        onClick={() => setRibbon(r)}
+                        className={`flex flex-col items-center p-2 rounded-lg border-2 transition-all hover:scale-105 ${ribbon === r ? 'border-[#d32f2f] bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-800'}`}
+                      >
+                        <div className="w-8 h-8 bg-gray-300 mb-1 rounded flex items-center justify-center overflow-hidden">
+                          {/* Mock image div */}
+                          <div className={`w-full h-full ${r === 'Rojo' ? 'bg-red-600' : r === 'Azul' ? 'bg-blue-600' : r === 'Blanco' ? 'bg-white border border-gray-200' : r === 'Nacional' ? 'bg-gradient-to-r from-blue-400 via-white to-blue-400' : 'bg-black'}`}></div>
+                        </div>
+                        <span className="text-[9px] font-bold uppercase">{r}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">3. Cantidad Total:</span>

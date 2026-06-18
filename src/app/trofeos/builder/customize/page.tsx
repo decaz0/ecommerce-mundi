@@ -38,8 +38,8 @@ function CustomizeContent() {
 
   // Medallion Canvas State (Diseño Maestro del Medallón)
   const [medallionElements, setMedallionElements] = useState<CanvasElement[]>([
-    { id: "medal-text-1", type: "text", text: "TORNEO", x: 60, y: 30, width: 180, height: 40, zIndex: 2, fontSize: 24, isCurved: true, fontStyle: 'Bold', color: '#000000' },
-    { id: "medal-text-2", type: "text", text: "2026", x: 60, y: 230, width: 180, height: 40, zIndex: 3, fontSize: 24, isCurved: true, fontStyle: 'Bold', color: '#000000' },
+    { id: "medal-text-1", type: "text", text: "TORNEO", x: 60, y: 30, width: 180, height: 40, zIndex: 2, fontSize: 24, isCurved: true, curveDirection: 'up', fontStyle: 'Bold', color: '#000000' },
+    { id: "medal-text-2", type: "text", text: "2026", x: 60, y: 230, width: 180, height: 40, zIndex: 3, fontSize: 24, isCurved: true, curveDirection: 'down', fontStyle: 'Bold', color: '#000000' },
     { id: "medal-image-1", type: "image", src: "", x: 100, y: 100, width: 100, height: 100, zIndex: 1 }
   ]);
   const [skipMedallion, setSkipMedallion] = useState<boolean>(false);
@@ -141,6 +141,8 @@ function CustomizeContent() {
   const masterMedallionLine2 = medallionElements.find(el => el.id === "medal-text-2")?.text || "";
   const masterMedallionIsCurved1 = medallionElements.find(el => el.id === "medal-text-1")?.isCurved || false;
   const masterMedallionIsCurved2 = medallionElements.find(el => el.id === "medal-text-2")?.isCurved || false;
+  const masterMedallionDirection1 = medallionElements.find(el => el.id === "medal-text-1")?.curveDirection || "up";
+  const masterMedallionDirection2 = medallionElements.find(el => el.id === "medal-text-2")?.curveDirection || "down";
 
   const StaticPlaque = ({ line1, line2, line3 }: { line1: string, line2: string, line3: string }) => {
     const activeLinesCount = [line1, line2, line3].filter(l => l && l.trim() !== "").length;
@@ -184,6 +186,19 @@ function CustomizeContent() {
               </div>
 
               {!skipMedallion && (
+                <div className="mb-6">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Plantillas Rápidas (Mockups)</h3>
+                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="min-w-[80px] w-[80px] h-[80px] rounded-full border-2 border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 flex items-center justify-center cursor-pointer hover:border-[#d32f2f] transition-colors relative overflow-hidden">
+                        <span className="text-[10px] font-bold text-gray-400">Arte {i}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!skipMedallion && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="flex flex-col gap-4">
                     <button onClick={() => medallionFileInputRef.current?.click()} className="py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase text-xs rounded-xl hover:scale-105 transition-transform w-full">
@@ -206,6 +221,11 @@ function CustomizeContent() {
                               <input type="checkbox" checked={masterMedallionIsCurved1} onChange={(e) => handleUpdateMedallion("medal-text-1", { isCurved: e.target.checked })} className="accent-[#d32f2f]" />
                               Curvo
                             </label>
+                            {masterMedallionIsCurved1 && (
+                              <button onClick={() => handleUpdateMedallion("medal-text-1", { curveDirection: masterMedallionDirection1 === "up" ? "down" : "up" })} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 rounded-full py-0.5 text-[10px] transition-colors">
+                                {masterMedallionDirection1 === "up" ? "Arco ↑" : "Arco ↓"}
+                              </button>
+                            )}
                           </span>
                           <span className={masterMedallionLine1.length === 15 ? 'text-red-500' : ''}>{masterMedallionLine1.length}/15</span>
                         </div>
@@ -220,6 +240,11 @@ function CustomizeContent() {
                               <input type="checkbox" checked={masterMedallionIsCurved2} onChange={(e) => handleUpdateMedallion("medal-text-2", { isCurved: e.target.checked })} className="accent-[#d32f2f]" />
                               Curvo
                             </label>
+                            {masterMedallionIsCurved2 && (
+                              <button onClick={() => handleUpdateMedallion("medal-text-2", { curveDirection: masterMedallionDirection2 === "up" ? "down" : "up" })} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 px-2 rounded-full py-0.5 text-[10px] transition-colors">
+                                {masterMedallionDirection2 === "up" ? "Arco ↑" : "Arco ↓"}
+                              </button>
+                            )}
                           </span>
                           <span className={masterMedallionLine2.length === 15 ? 'text-red-500' : ''}>{masterMedallionLine2.length}/15</span>
                         </div>
@@ -251,7 +276,17 @@ function CustomizeContent() {
             <div className="flex justify-between items-start mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
               <div>
                 <h2 className="text-xl font-black uppercase tracking-tight text-[#d32f2f]">{isPM ? "2" : "1"}. Personalización de Placa Base</h2>
+                <p className="text-gray-500 text-sm mt-1">Configura el texto para la base del trofeo.</p>
               </div>
+            </div>
+
+            <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+               <h3 className="text-xs font-black text-yellow-800 dark:text-yellow-500 uppercase tracking-widest mb-2">Características del Producto</h3>
+               <ul className="text-xs text-yellow-700 dark:text-yellow-600 list-disc list-inside flex flex-col gap-1">
+                 <li><strong>Material:</strong> Base pesada de mármol sintético y columna central de PVC reforzado brillante.</li>
+                 <li><strong>Medidas del Trofeo:</strong> Alto total de {size}" (pulgadas).</li>
+                 <li><strong>Lámina de Grabado:</strong> Placa metálica dorada de 6.5 cm x 2.5 cm (impresión láser HD).</li>
+               </ul>
             </div>
 
             <div className="flex justify-between items-center bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl mb-8 border border-gray-200 dark:border-gray-800">

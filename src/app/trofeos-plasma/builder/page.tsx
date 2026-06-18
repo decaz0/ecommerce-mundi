@@ -197,15 +197,15 @@ function TrofeoPlasmaBuilderContent() {
     });
 
     return (
-      <div className="relative w-48 h-36 flex items-center justify-center mt-2">
-        <div className="w-[192px] h-[144px] rounded-sm border border-[#b38728]/50 shadow-[inset_0_0_10px_rgba(0,0,0,0.1),0_5px_15px_rgba(0,0,0,0.5)] overflow-hidden relative bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728]">
-          <div className="absolute top-0 left-0 origin-top-left" style={{ transform: 'scale(calc(192 / 400))' }}>
+      <div className="relative w-[216px] h-[144px] flex items-center justify-center mt-2">
+        <div className="w-[216px] h-[144px] rounded-sm border border-[#b38728]/50 shadow-[inset_0_0_10px_rgba(0,0,0,0.1),0_5px_15px_rgba(0,0,0,0.5)] overflow-hidden relative bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728]">
+          <div className="absolute top-0 left-0 origin-top-left" style={{ transform: 'scale(calc(216 / 450))' }}>
             <CanvasEditor 
               elements={computedElements}
               onChange={() => {}}
               selectedId={null}
               onSelect={() => {}}
-              width={400}
+              width={450}
               height={300}
               readOnly={true}
             />
@@ -277,13 +277,13 @@ function TrofeoPlasmaBuilderContent() {
               </div>
 
               <div className="flex justify-center items-center w-full">
-                <div className="w-[400px] h-[300px] border border-yellow-600 shadow-[inset_0_0_10px_rgba(0,0,0,0.5),0_10px_30px_rgba(0,0,0,0.2)] overflow-hidden relative bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] rounded-sm">
+                <div className="w-[450px] h-[300px] border border-yellow-600 shadow-[inset_0_0_10px_rgba(0,0,0,0.5),0_10px_30px_rgba(0,0,0,0.2)] overflow-hidden relative bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] rounded-sm">
                   <CanvasEditor 
                     elements={elements} 
                     onChange={setElements} 
                     selectedId={selectedId} 
                     onSelect={setSelectedId} 
-                    width={400} 
+                    width={450} 
                     height={300} 
                     readOnly={false} 
                     enableOverlapDetection={true} 
