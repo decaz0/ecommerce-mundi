@@ -38,17 +38,20 @@ function CustomizeContent() {
 
   // Medallion Canvas State (Diseño Maestro del Medallón)
   const [medallionElements, setMedallionElements] = useState<CanvasElement[]>([
-    { id: "medal-text-1", type: "text", text: "TORNEO", x: 60, y: 30, width: 180, height: 40, zIndex: 2, fontSize: 24, isCurved: false, fontStyle: 'Bold', color: '#ffffff' },
-    { id: "medal-text-2", type: "text", text: "2026", x: 60, y: 230, width: 180, height: 40, zIndex: 3, fontSize: 24, isCurved: false, fontStyle: 'Bold', color: '#ffffff' },
+    { id: "medal-text-1", type: "text", text: "TORNEO", x: 60, y: 30, width: 180, height: 40, zIndex: 2, fontSize: 24, isCurved: true, fontStyle: 'Bold', color: '#000000' },
+    { id: "medal-text-2", type: "text", text: "2026", x: 60, y: 230, width: 180, height: 40, zIndex: 3, fontSize: 24, isCurved: true, fontStyle: 'Bold', color: '#000000' },
     { id: "medal-image-1", type: "image", src: "", x: 100, y: 100, width: 100, height: 100, zIndex: 1 }
   ]);
   const [skipMedallion, setSkipMedallion] = useState<boolean>(false);
   const medallionFileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [selectedMedallionId, setSelectedMedallionId] = useState<string | null>(null);
 
   // Plaque & B2B State
   const [personalizationType, setPersonalizationType] = useState<PersonalizationType>("SAME");
   const [quantity, setQuantity] = useState<number>(1);
   const [bulkRows, setBulkRows] = useState<BulkRow[]>([{ id: "1", line1: "1ER LUGAR", line2: "CAMPEONATO", line3: "2026" }]);
+  const [plaqueStyles, setPlaqueStyles] = useState({ line1: 'Normal', line2: 'Bold', line3: 'Italic' });
   
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
 
@@ -136,14 +139,29 @@ function CustomizeContent() {
 
   const masterMedallionLine1 = medallionElements.find(el => el.id === "medal-text-1")?.text || "";
   const masterMedallionLine2 = medallionElements.find(el => el.id === "medal-text-2")?.text || "";
+  const masterMedallionIsCurved1 = medallionElements.find(el => el.id === "medal-text-1")?.isCurved || false;
+  const masterMedallionIsCurved2 = medallionElements.find(el => el.id === "medal-text-2")?.isCurved || false;
 
-  const StaticPlaque = ({ line1, line2, line3 }: { line1: string, line2: string, line3: string }) => (
-    <div className="relative border-2 border-[#fff7c2] rounded-sm overflow-hidden shadow-[0_10px_30px_rgba(179,135,40,0.3)] bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] w-[300px] h-[90px] flex flex-col items-center justify-center p-2 text-center text-black" style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }}>
-      <div className="text-sm font-normal uppercase leading-tight break-words whitespace-normal w-full px-1">{line1}</div>
-      <div className="text-lg font-bold uppercase leading-tight break-words whitespace-normal w-full mt-1 mb-1 px-1">{line2}</div>
-      <div className="text-sm font-serif italic leading-tight break-words whitespace-normal w-full px-1">{line3}</div>
-    </div>
-  );
+  const StaticPlaque = ({ line1, line2, line3 }: { line1: string, line2: string, line3: string }) => {
+    const activeLinesCount = [line1, line2, line3].filter(l => l && l.trim() !== "").length;
+    const isSingleLine = activeLinesCount === 1;
+
+    const getCssForStyle = (style: string) => {
+      let css = "leading-tight break-words whitespace-normal w-full px-1 flex items-center justify-center ";
+      if (style === 'Bold') css += "font-bold ";
+      else if (style === 'Italic') css += "font-serif italic ";
+      else css += "font-normal ";
+      return css;
+    };
+
+    return (
+      <div className="relative border-2 border-[#fff7c2] rounded-sm overflow-hidden shadow-[0_10px_30px_rgba(179,135,40,0.3)] bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] w-[300px] h-[90px] flex flex-col items-center justify-center p-2 text-center text-black" style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }}>
+        {line1 && <div className={getCssForStyle(plaqueStyles.line1) + (isSingleLine ? "text-2xl h-full" : "text-sm mt-1")}>{line1}</div>}
+        {line2 && <div className={getCssForStyle(plaqueStyles.line2) + (isSingleLine ? "text-3xl h-full" : "text-lg my-0.5 flex-1")}>{line2}</div>}
+        {line3 && <div className={getCssForStyle(plaqueStyles.line3) + (isSingleLine ? "text-2xl h-full" : "text-sm mb-1")}>{line3}</div>}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-8 relative pb-32">
@@ -157,7 +175,7 @@ function CustomizeContent() {
               <div className="flex justify-between items-start mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
                 <div>
                   <h2 className="text-xl font-black uppercase tracking-tight text-[#d32f2f]">1. Diseño de Portamedallón</h2>
-                  <p className="text-gray-500 text-sm">El medallón será idéntico para todos los trofeos del lote.</p>
+                  <p className="text-gray-500 text-sm">El medallón será idéntico para todos los trofeos del lote. Puedes mover y curvar los textos libremente.</p>
                 </div>
                 <label className="flex items-center gap-2 text-sm text-gray-500 font-bold bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg cursor-pointer">
                   <input type="checkbox" checked={skipMedallion} onChange={(e) => setSkipMedallion(e.target.checked)} className="w-4 h-4 text-[#d32f2f] rounded" />
@@ -179,18 +197,30 @@ function CustomizeContent() {
                       }
                     }} />
 
-                    <div className="bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col gap-3 mt-4">
+                    <div className="bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col gap-4 mt-4">
                       <div>
-                        <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1">
-                          <span>Texto Superior (Máx 15)</span>
+                        <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1 items-center">
+                          <span className="flex items-center gap-2">
+                            Texto Superior
+                            <label className="flex items-center gap-1 cursor-pointer ml-2 bg-gray-200 dark:bg-gray-800 px-2 rounded-full py-0.5">
+                              <input type="checkbox" checked={masterMedallionIsCurved1} onChange={(e) => handleUpdateMedallion("medal-text-1", { isCurved: e.target.checked })} className="accent-[#d32f2f]" />
+                              Curvo
+                            </label>
+                          </span>
                           <span className={masterMedallionLine1.length === 15 ? 'text-red-500' : ''}>{masterMedallionLine1.length}/15</span>
                         </div>
                         <input type="text" maxLength={15} value={masterMedallionLine1} onChange={(e) => handleUpdateMedallion("medal-text-1", { text: e.target.value })} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none text-sm" />
                       </div>
                       
                       <div>
-                        <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1">
-                          <span>Texto Inferior (Máx 15)</span>
+                        <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1 items-center">
+                          <span className="flex items-center gap-2">
+                            Texto Inferior
+                            <label className="flex items-center gap-1 cursor-pointer ml-2 bg-gray-200 dark:bg-gray-800 px-2 rounded-full py-0.5">
+                              <input type="checkbox" checked={masterMedallionIsCurved2} onChange={(e) => handleUpdateMedallion("medal-text-2", { isCurved: e.target.checked })} className="accent-[#d32f2f]" />
+                              Curvo
+                            </label>
+                          </span>
                           <span className={masterMedallionLine2.length === 15 ? 'text-red-500' : ''}>{masterMedallionLine2.length}/15</span>
                         </div>
                         <input type="text" maxLength={15} value={masterMedallionLine2} onChange={(e) => handleUpdateMedallion("medal-text-2", { text: e.target.value })} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none text-sm" />
@@ -199,8 +229,17 @@ function CustomizeContent() {
                   </div>
 
                   <div className="flex justify-center items-center">
-                    <div className="w-[300px] h-[300px] rounded-full border-2 border-gray-300 shadow-[inset_0_0_10px_rgba(0,0,0,0.5),0_10px_30px_rgba(0,0,0,0.2)] overflow-hidden relative bg-gradient-to-br from-[#2a2a2a] via-[#1a1a1a] to-[#3a3a3a]">
-                      <CanvasEditor elements={medallionElements} onChange={() => {}} selectedId={null} onSelect={() => {}} width={300} height={300} readOnly={true} />
+                    <div className="w-[300px] h-[300px] rounded-full border border-yellow-600 shadow-[inset_0_0_10px_rgba(0,0,0,0.5),0_10px_30px_rgba(0,0,0,0.2)] overflow-hidden relative bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728]">
+                      <CanvasEditor 
+                        elements={medallionElements} 
+                        onChange={setMedallionElements} 
+                        selectedId={selectedMedallionId} 
+                        onSelect={setSelectedMedallionId} 
+                        width={300} 
+                        height={300} 
+                        readOnly={false}
+                        enableOverlapDetection={true} 
+                      />
                     </div>
                   </div>
                 </div>
@@ -236,25 +275,40 @@ function CustomizeContent() {
             </div>
 
             {personalizationType === "NONE" && (
-              <div className="p-8 text-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800">
+              <div className="p-10 text-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800">
                 <p className="text-sm text-gray-500">Se enviarán los trofeos con la placa en blanco para tu propia personalización.</p>
               </div>
             )}
 
             {personalizationType === "SAME" && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-center bg-gray-50 dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-center bg-gray-50 dark:bg-[#1a1a1a] p-8 rounded-xl border border-gray-200 dark:border-gray-800">
                 <div className="flex flex-col gap-4">
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Línea 1 (Máx 15)</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase">Línea 1 (Máx 15)</label>
+                      <select className="bg-gray-200 dark:bg-gray-800 text-[10px] text-black dark:text-white rounded px-1 outline-none" value={plaqueStyles.line1} onChange={(e) => setPlaqueStyles({...plaqueStyles, line1: e.target.value})}>
+                         <option value="Normal">Normal</option><option value="Bold">Negrita</option><option value="Italic">Cursiva</option>
+                      </select>
+                    </div>
                     <input type="text" maxLength={15} value={bulkRows[0].line1} onChange={(e) => handleBulkChange(0, "line1", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Línea 2 (Máx 15)</label>
-                    <input type="text" maxLength={15} value={bulkRows[0].line2} onChange={(e) => handleBulkChange(0, "line2", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none" />
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase">Línea 2 (Máx 15)</label>
+                      <select className="bg-gray-200 dark:bg-gray-800 text-[10px] text-black dark:text-white rounded px-1 outline-none" value={plaqueStyles.line2} onChange={(e) => setPlaqueStyles({...plaqueStyles, line2: e.target.value})}>
+                         <option value="Normal">Normal</option><option value="Bold">Negrita</option><option value="Italic">Cursiva</option>
+                      </select>
+                    </div>
+                    <input type="text" maxLength={15} value={bulkRows[0].line2} onChange={(e) => handleBulkChange(0, "line2", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none font-bold" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Línea 3 (Máx 15)</label>
-                    <input type="text" maxLength={15} value={bulkRows[0].line3} onChange={(e) => handleBulkChange(0, "line3", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none font-bold" />
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase">Línea 3 (Máx 15)</label>
+                      <select className="bg-gray-200 dark:bg-gray-800 text-[10px] text-black dark:text-white rounded px-1 outline-none" value={plaqueStyles.line3} onChange={(e) => setPlaqueStyles({...plaqueStyles, line3: e.target.value})}>
+                         <option value="Normal">Normal</option><option value="Bold">Negrita</option><option value="Italic">Cursiva</option>
+                      </select>
+                    </div>
+                    <input type="text" maxLength={15} value={bulkRows[0].line3} onChange={(e) => handleBulkChange(0, "line3", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none font-serif italic" />
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-2">
@@ -266,8 +320,29 @@ function CustomizeContent() {
 
             {personalizationType === "DIFFERENT" && (
               <div className="flex flex-col gap-6">
+                <div className="bg-gray-100 dark:bg-[#1a1a1a] p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-around mb-2">
+                   <div className="flex items-center gap-2 text-sm">
+                      <span className="font-bold text-gray-500 uppercase text-[10px]">Estilo L1:</span>
+                      <select className="bg-white dark:bg-black border border-gray-300 rounded px-1 outline-none" value={plaqueStyles.line1} onChange={(e) => setPlaqueStyles({...plaqueStyles, line1: e.target.value})}>
+                         <option value="Normal">Normal</option><option value="Bold">Negrita</option><option value="Italic">Cursiva</option>
+                      </select>
+                   </div>
+                   <div className="flex items-center gap-2 text-sm">
+                      <span className="font-bold text-gray-500 uppercase text-[10px]">Estilo L2:</span>
+                      <select className="bg-white dark:bg-black border border-gray-300 rounded px-1 outline-none" value={plaqueStyles.line2} onChange={(e) => setPlaqueStyles({...plaqueStyles, line2: e.target.value})}>
+                         <option value="Normal">Normal</option><option value="Bold">Negrita</option><option value="Italic">Cursiva</option>
+                      </select>
+                   </div>
+                   <div className="flex items-center gap-2 text-sm">
+                      <span className="font-bold text-gray-500 uppercase text-[10px]">Estilo L3:</span>
+                      <select className="bg-white dark:bg-black border border-gray-300 rounded px-1 outline-none" value={plaqueStyles.line3} onChange={(e) => setPlaqueStyles({...plaqueStyles, line3: e.target.value})}>
+                         <option value="Normal">Normal</option><option value="Bold">Negrita</option><option value="Italic">Cursiva</option>
+                      </select>
+                   </div>
+                </div>
+
                 {bulkRows.map((row, idx) => (
-                  <div key={row.id} className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-center bg-gray-50 dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+                  <div key={row.id} className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-center bg-gray-50 dark:bg-[#1a1a1a] p-8 rounded-xl border border-gray-200 dark:border-gray-800">
                     <div className="flex flex-col gap-4">
                       <h4 className="text-sm font-black uppercase text-[#d32f2f] mb-2">Placa {idx + 1}</h4>
                       
@@ -282,7 +357,7 @@ function CustomizeContent() {
                       <div className="flex gap-2">
                         <div className="flex-1">
                           <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Línea 2</label>
-                          <input type="text" maxLength={15} value={row.line2} onChange={(e) => handleBulkChange(idx, "line2", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none font-bold" />
+                          <input type="text" maxLength={15} value={row.line2} onChange={(e) => handleBulkChange(idx, "line2", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none" />
                         </div>
                         {idx === 0 && <button onClick={() => copyToAll("line2")} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 text-[10px] font-bold uppercase px-3 py-2 rounded self-end h-[38px]">Repetir</button>}
                       </div>
@@ -290,7 +365,7 @@ function CustomizeContent() {
                       <div className="flex gap-2">
                         <div className="flex-1">
                           <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Línea 3</label>
-                          <input type="text" maxLength={15} value={row.line3} onChange={(e) => handleBulkChange(idx, "line3", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none font-bold" />
+                          <input type="text" maxLength={15} value={row.line3} onChange={(e) => handleBulkChange(idx, "line3", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none" />
                         </div>
                         {idx === 0 && <button onClick={() => copyToAll("line3")} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 text-[10px] font-bold uppercase px-3 py-2 rounded self-end h-[38px]">Repetir</button>}
                       </div>
@@ -308,38 +383,39 @@ function CustomizeContent() {
         </div>
 
         {/* DERECHA: SIDEBAR DE ORDEN */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-200 dark:border-gray-800 sticky top-24 shadow-xl">
-             <h3 className="font-black text-xl mb-6 text-[#d32f2f] uppercase tracking-tight">Detalles de Orden</h3>
+        <div className="w-full lg:col-span-1">
+          <div className="bg-white dark:bg-[#111] p-10 rounded-3xl border border-gray-200 dark:border-gray-800 sticky top-24 shadow-2xl flex flex-col gap-6">
+             <h3 className="font-black text-2xl mb-2 text-[#d32f2f] uppercase tracking-tight text-center">Detalles de Orden</h3>
              
-             <div className="relative h-64 w-full flex items-center justify-center mb-6">
-                <img src={getProductImage()} className="h-full w-auto object-contain drop-shadow-2xl" alt="Trofeo" />
+             <div className="relative h-64 w-full flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                <img src={getProductImage()} className="h-full w-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform" alt="Trofeo" />
              </div>
 
-             <div className="flex flex-col gap-4 mb-6 border-t border-gray-100 dark:border-gray-800 pt-6">
+             <div className="flex flex-col gap-5 border-t border-gray-100 dark:border-gray-800 pt-6">
                 <div>
                   <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">1. Modelo:</span>
-                  <div className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 rounded p-3 font-bold text-sm">TR-{color}{figure}{size}</div>
+                  <div className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 rounded-lg p-4 font-bold text-base">TR-{color}{figure}{size}</div>
                 </div>
                 <div>
                   <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">2. Cantidad Total:</span>
-                  <input type="number" min="1" max="5000" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 rounded p-3 text-center font-black outline-none" />
+                  <input type="number" min="1" max="5000" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center font-black outline-none text-lg" />
                 </div>
              </div>
 
-             <div className="text-right border-t border-gray-100 dark:border-gray-800 pt-4 mb-6">
-                <div className="text-xs font-bold text-gray-500 uppercase">Subtotal</div>
-                <div className="text-4xl font-black text-[#d32f2f]">Q{((size === "11" ? 100 : 130) * quantity).toFixed(2)}</div>
+             <div className="text-right border-t border-gray-100 dark:border-gray-800 pt-6 mt-2">
+                <div className="text-sm font-bold text-gray-500 uppercase mb-1">Subtotal</div>
+                <div className="text-5xl font-black text-[#d32f2f]">Q{((size === "11" ? 100 : 130) * quantity).toFixed(2)}</div>
              </div>
              
-             <div className="flex items-start gap-3 mb-6 bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl">
-                <input type="checkbox" id="terms_side" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-[#d32f2f]" />
-                <label htmlFor="terms_side" className="text-xs text-gray-600 dark:text-gray-400">
-                  <span className="font-bold text-black dark:text-white uppercase">Garantía Crown:</span> Confirmo el diseño, colores y la revisión ortográfica.
+             <div className="flex items-start gap-4 bg-red-50 dark:bg-red-900/20 p-5 rounded-xl mt-4">
+                <input type="checkbox" id="terms_side" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1 w-6 h-6 accent-[#d32f2f]" />
+                <label htmlFor="terms_side" className="text-sm text-gray-700 dark:text-gray-300 leading-tight">
+                  <span className="font-black text-black dark:text-white uppercase block mb-1">Garantía Crown:</span> 
+                  Confirmo el diseño, modelo y la revisión ortográfica.
                 </label>
              </div>
              
-             <button onClick={handleAddToCart} disabled={!acceptedTerms} className="w-full py-4 bg-[#d32f2f] hover:bg-red-700 disabled:bg-gray-400 text-white font-black uppercase rounded-xl transition-all shadow-lg hover:scale-105">
+             <button onClick={handleAddToCart} disabled={!acceptedTerms} className="w-full py-5 mt-2 bg-[#d32f2f] hover:bg-red-700 disabled:bg-gray-400 text-white font-black uppercase text-lg rounded-xl transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02]">
                 Añadir al Carrito
              </button>
           </div>

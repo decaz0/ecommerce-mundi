@@ -33,9 +33,10 @@ interface DraggableProps {
   parentWidth: number;
   parentHeight: number;
   readOnly?: boolean;
+  onInteractionEnd?: () => void;
 }
 
-const DraggableElement: React.FC<DraggableProps> = ({ element, isSelected, onSelect, onChange, parentWidth, parentHeight, readOnly }) => {
+const DraggableElement: React.FC<DraggableProps> = ({ element, isSelected, onSelect, onChange, parentWidth, parentHeight, readOnly, onInteractionEnd }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
@@ -62,18 +63,28 @@ const DraggableElement: React.FC<DraggableProps> = ({ element, isSelected, onSel
     const dy = e.clientY - startPos.y;
     
     if (isDragging) {
-      // Limitar coordenadas (Hard Bounds)
       onChange({
         ...element,
         x: Math.max(0, Math.min(element.x + dx, parentWidth - element.width)),
         y: Math.max(0, Math.min(element.y + dy, parentHeight - element.height))
       });
     } else if (isResizing) {
-      // Resize bottom-right (con límites físicos)
+      const newWidth = Math.max(20, Math.min(element.width + dx, parentWidth - element.x));
+      const newHeight = Math.max(20, Math.min(element.height + dy, parentHeight - element.y));
+      
+      const updates: any = {
+        width: newWidth,
+        height: newHeight
+      };
+      
+      // Auto-escala de texto basado en la altura
+      if (element.type === 'text') {
+        updates.fontSize = Math.max(10, Math.floor(newHeight * 0.7));
+      }
+      
       onChange({
         ...element,
-        width: Math.max(20, Math.min(element.width + dx, parentWidth - element.x)),
-        height: Math.max(20, Math.min(element.height + dy, parentHeight - element.y))
+        ...updates
       });
     }
     
@@ -81,9 +92,12 @@ const DraggableElement: React.FC<DraggableProps> = ({ element, isSelected, onSel
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    setIsDragging(false);
-    setIsResizing(false);
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    if (isDragging || isResizing) {
+      setIsDragging(false);
+      setIsResizing(false);
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      if (onInteractionEnd) onInteractionEnd();
+    }
   };
 
   const fontWeight = element.fontStyle === "Bold" ? "900" : "normal";
@@ -128,18 +142,18 @@ const DraggableElement: React.FC<DraggableProps> = ({ element, isSelected, onSel
           fontStyle: fontStyleCss,
           textAlign: 'center',
           wordBreak: 'break-word',
-          fontFamily: element.fontFamily || 'serif'
+          lineHeight: 1.1
         }}>
-          {element.text ? element.text : (readOnly ? "" : "[Vacío]")}
+          {element.text ? element.text : (readOnly ? "" : "")}
         </div>
       )}
 
       {element.type === "text" && element.isCurved && (
-        <svg width="100%" height="100%" viewBox="-150 -150 300 300" style={{ overflow: 'visible' }}>
-          <path id={`curve-${element.id}`} d="M -100,0 A 100,100 0 1,1 100,0" fill="transparent" />
-          <text fontSize={element.fontSize || 24} fill={element.text ? (element.color || '#000') : (readOnly ? 'transparent' : '#ccc')} fontWeight={fontWeight} fontStyle={fontStyleCss} fontFamily={element.fontFamily || 'serif'}>
+        <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
+          <path id={`curve-${element.id}`} d={`M 0,${element.height / 2} A ${element.width / 2},${element.width / 2} 0 0,1 ${element.width},${element.height / 2}`} fill="transparent" />
+          <text fontSize={element.fontSize || 24} fill={element.text ? (element.color || '#000') : (readOnly ? 'transparent' : 'transparent')} fontWeight={fontWeight} fontStyle={fontStyleCss} fontFamily={element.fontFamily || 'serif'}>
             <textPath href={`#curve-${element.id}`} startOffset="50%" textAnchor="middle">
-              {element.text ? element.text : (readOnly ? "" : "[Vacío]")}
+              {element.text ? element.text : (readOnly ? "" : "")}
             </textPath>
           </text>
         </svg>
@@ -172,6 +186,7 @@ interface CanvasEditorProps {
   clipPath?: string;
   backgroundElement?: React.ReactNode;
   readOnly?: boolean;
+  enableOverlapDetection?: boolean;
 }
 
 export default function CanvasEditor({ 
@@ -183,10 +198,13 @@ export default function CanvasEditor({
   height = 500,
   clipPath,
   backgroundElement,
-  readOnly = false
+  readOnly = false,
+  enableOverlapDetection = false
 }: CanvasEditorProps) {
   
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
+  const [overlappingElementId, setOverlappingElementId] = useState<string | null>(null);
 
   const handleElementChange = (newElem: CanvasElement) => {
     onChange(elements.map(el => el.id === newElem.id ? newElem : el));
@@ -196,9 +214,107 @@ export default function CanvasEditor({
     onSelect(null);
   };
 
+  const checkOverlaps = () => {
+    if (!enableOverlapDetection || readOnly) return;
+    
+    // Validar intersección de bounding boxes
+    for (let i = 0; i < elements.length; i++) {
+      for (let j = i + 1; j < elements.length; j++) {
+        const a = elements[i];
+        const b = elements[j];
+        
+        // Ignorar si uno no tiene contenido real
+        if (a.type === 'text' && !a.text) continue;
+        if (b.type === 'text' && !b.text) continue;
+        if (a.type === 'image' && !a.src) continue;
+        if (b.type === 'image' && !b.src) continue;
+
+        const aRight = a.x + a.width;
+        const aBottom = a.y + a.height;
+        const bRight = b.x + b.width;
+        const bBottom = b.y + b.height;
+
+        const isOverlapping = !(
+          aRight < b.x || 
+          a.x > bRight || 
+          aBottom < b.y || 
+          a.y > bBottom
+        );
+
+        if (isOverlapping) {
+          const idToFix = a.id === selectedId ? a.id : (b.id === selectedId ? b.id : a.id);
+          setOverlappingElementId(idToFix);
+          if ((a.type === 'text' && b.type === 'image') || (a.type === 'image' && b.type === 'text')) {
+            setOverlapWarning("Tu texto está sobrepuesto sobre una imagen.");
+            return;
+          } else {
+            setOverlapWarning("Tu texto está sobrepuesto sobre otro texto.");
+            return;
+          }
+        }
+      }
+    }
+  };
+
+  const handleFixOverlap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!overlappingElementId) {
+      setOverlapWarning(null);
+      return;
+    }
+
+    const elemToFix = elements.find(el => el.id === overlappingElementId);
+    if (!elemToFix) {
+      setOverlapWarning(null);
+      return;
+    }
+
+    const stepY = 10;
+    const stepX = 10;
+    let found = false;
+    let bestX = elemToFix.x;
+    let bestY = elemToFix.y;
+
+    for (let y = 10; y < height - elemToFix.height; y += stepY) {
+      for (let x = 10; x < width - elemToFix.width; x += stepX) {
+        let collision = false;
+        for (const other of elements) {
+          if (other.id === overlappingElementId) continue;
+          if ((other.type === 'text' && !other.text) || (other.type === 'image' && !other.src)) continue;
+
+          const aRight = x + elemToFix.width;
+          const aBottom = y + elemToFix.height;
+          const bRight = other.x + other.width;
+          const bBottom = other.y + other.height;
+
+          if (!(aRight < other.x || x > bRight || aBottom < other.y || y > bBottom)) {
+            collision = true;
+            break;
+          }
+        }
+        if (!collision) {
+          bestX = x;
+          bestY = y;
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+
+    if (found) {
+      handleElementChange({ ...elemToFix, x: bestX, y: bestY });
+      setOverlapWarning(null);
+      setOverlappingElementId(null);
+    } else {
+      setOverlapWarning("No se puede corregir ya que no cuenta con espacio libre. Haz el texto o imagen más pequeño, o déjalo como está.");
+      setOverlappingElementId(null);
+    }
+  };
+
   return (
     <div 
-      className="relative mx-auto overflow-hidden shadow-inner bg-transparent"
+      className="relative mx-auto overflow-hidden shadow-inner bg-transparent group"
       style={{ 
         width: `${width}px`, 
         height: `${height}px`,
@@ -214,17 +330,39 @@ export default function CanvasEditor({
         {backgroundElement}
       </div>
 
+      {/* Alerta de colisión */}
+      {overlapWarning && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white text-sm sm:text-base px-6 py-4 rounded-xl shadow-2xl flex flex-col items-center text-center gap-4 w-[90%] max-w-sm border-2 border-red-400">
+          <span className="font-black text-lg leading-tight">{overlapWarning}</span>
+          <div className="flex gap-4 w-full">
+            <button 
+              className="flex-1 bg-white text-red-600 px-4 py-2 rounded-lg font-black hover:bg-gray-100 transition-colors shadow-md text-sm uppercase"
+              onClick={(e) => { e.stopPropagation(); setOverlapWarning(null); }}
+            >
+              Dejarlo así
+            </button>
+            <button 
+              className="flex-1 bg-red-800 text-white px-4 py-2 rounded-lg font-black hover:bg-red-900 transition-colors shadow-md text-sm uppercase border border-red-500"
+              onClick={handleFixOverlap}
+            >
+              Arreglarlo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Elementos interactivos ordenados por zIndex */}
       {elements.sort((a, b) => a.zIndex - b.zIndex).map((el) => (
         <DraggableElement
           key={el.id}
           element={el}
           isSelected={selectedId === el.id}
-          onSelect={() => onSelect(el.id)}
+          onSelect={() => { onSelect(el.id); setOverlapWarning(null); }}
           onChange={handleElementChange}
           parentWidth={width}
           parentHeight={height}
           readOnly={readOnly}
+          onInteractionEnd={checkOverlaps}
         />
       ))}
     </div>

@@ -29,10 +29,12 @@ function BotonesBuilderContent() {
   
   // Diseño del Botón (Único para todos)
   const [elements, setElements] = useState<CanvasElement[]>([
-    { id: "text-1", type: "text", text: "MI EMPRESA", x: 100, y: 30, width: 200, height: 40, zIndex: 2, fontSize: 24, isCurved: true, fontStyle: 'Bold' },
-    { id: "text-2", type: "text", text: "CAMPAÑA 2026", x: 100, y: 330, width: 200, height: 40, zIndex: 3, fontSize: 20, isCurved: true, fontStyle: 'Normal' },
+    { id: "text-1", type: "text", text: "MI EMPRESA", x: 25, y: 30, width: 350, height: 60, zIndex: 2, fontSize: 40, isCurved: true, fontStyle: 'Bold' },
+    { id: "text-2", type: "text", text: "CAMPAÑA 2026", x: 25, y: 310, width: 350, height: 60, zIndex: 3, fontSize: 32, isCurved: true, fontStyle: 'Normal' },
     { id: "image-1", type: "image", src: "", x: 100, y: 100, width: 200, height: 200, zIndex: 1 }
   ]);
+  
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
@@ -51,7 +53,7 @@ function BotonesBuilderContent() {
   const handleUpdateTemplate = (id: string, updates: Partial<CanvasElement>) => {
     setElements(elements.map(el => {
       if (el.id === id) {
-        if (updates.text && updates.text.length > 15) return el;
+        if (updates.text && updates.text.length > 20) return el;
         return { ...el, ...updates };
       }
       return el;
@@ -59,7 +61,7 @@ function BotonesBuilderContent() {
   };
 
   const handleMasterChange = (field: "text-1" | "text-2", value: string) => {
-    if (value.length > 15) return;
+    if (value.length > 20) return;
     handleUpdateTemplate(field, { text: value });
   };
 
@@ -120,6 +122,8 @@ function BotonesBuilderContent() {
 
   const masterLine1 = elements.find(el => el.id === "text-1")?.text || "";
   const masterLine2 = elements.find(el => el.id === "text-2")?.text || "";
+  const masterLine1Curved = elements.find(el => el.id === "text-1")?.isCurved || false;
+  const masterLine2Curved = elements.find(el => el.id === "text-2")?.isCurved || false;
 
   return (
     <div className="flex flex-col gap-8 relative pb-32">
@@ -161,7 +165,7 @@ function BotonesBuilderContent() {
             <div className="flex justify-between items-start mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
               <div>
                 <h2 className="text-xl font-black uppercase tracking-tight text-[#d32f2f]">2. Diseño del Botón</h2>
-                <p className="text-gray-500 text-sm">Crea tu botón promocional. El diseño será idéntico para todos los botones de este lote.</p>
+                <p className="text-gray-500 text-sm">Crea tu botón promocional. Puedes mover y redimensionar los elementos.</p>
               </div>
             </div>
 
@@ -180,21 +184,33 @@ function BotonesBuilderContent() {
                 </button>
                 <input type="file" accept="image/png, image/jpeg" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
 
-                <div className="bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col gap-3 mt-4">
+                <div className="bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col gap-4 mt-4">
                   <div>
-                    <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      <span>Texto Superior Curvo (Máx 15)</span>
-                      <span className={masterLine1.length === 15 ? 'text-red-500' : ''}>{masterLine1.length}/15</span>
+                    <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1 items-center">
+                      <span className="flex items-center gap-2">
+                        Texto Superior
+                        <label className="flex items-center gap-1 cursor-pointer ml-2 bg-gray-200 dark:bg-gray-800 px-2 rounded-full py-0.5">
+                          <input type="checkbox" checked={masterLine1Curved} onChange={(e) => handleUpdateTemplate("text-1", { isCurved: e.target.checked })} className="accent-[#d32f2f]" />
+                          Curvo
+                        </label>
+                      </span>
+                      <span className={masterLine1.length === 20 ? 'text-red-500' : ''}>{masterLine1.length}/20</span>
                     </div>
-                    <input type="text" maxLength={15} value={masterLine1} onChange={(e) => handleMasterChange("text-1", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none text-sm" />
+                    <input type="text" maxLength={20} value={masterLine1} onChange={(e) => handleMasterChange("text-1", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none text-sm" />
                   </div>
                   
                   <div>
-                    <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      <span>Texto Inferior Curvo (Máx 15)</span>
-                      <span className={masterLine2.length === 15 ? 'text-red-500' : ''}>{masterLine2.length}/15</span>
+                    <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1 items-center">
+                      <span className="flex items-center gap-2">
+                        Texto Inferior
+                        <label className="flex items-center gap-1 cursor-pointer ml-2 bg-gray-200 dark:bg-gray-800 px-2 rounded-full py-0.5">
+                          <input type="checkbox" checked={masterLine2Curved} onChange={(e) => handleUpdateTemplate("text-2", { isCurved: e.target.checked })} className="accent-[#d32f2f]" />
+                          Curvo
+                        </label>
+                      </span>
+                      <span className={masterLine2.length === 20 ? 'text-red-500' : ''}>{masterLine2.length}/20</span>
                     </div>
-                    <input type="text" maxLength={15} value={masterLine2} onChange={(e) => handleMasterChange("text-2", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none text-sm" />
+                    <input type="text" maxLength={20} value={masterLine2} onChange={(e) => handleMasterChange("text-2", e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none text-sm" />
                   </div>
                 </div>
               </div>
@@ -204,9 +220,9 @@ function BotonesBuilderContent() {
                   <div className="absolute top-0 left-0" style={{ transform: 'scale(calc(250 / 400))', transformOrigin: 'top left' }}>
                     <CanvasEditor 
                       elements={elements}
-                      onChange={() => {}}
-                      selectedId={null}
-                      onSelect={() => {}}
+                      onChange={setElements}
+                      selectedId={selectedId}
+                      onSelect={setSelectedId}
                       width={400}
                       height={400}
                       clipPath="circle(50% at 50% 50%)"
@@ -215,7 +231,8 @@ function BotonesBuilderContent() {
                           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-white/60 pointer-events-none mix-blend-overlay z-50"></div>
                         </div>
                       }
-                      readOnly={true}
+                      readOnly={false}
+                      enableOverlapDetection={true}
                     />
                   </div>
                 </div>
@@ -226,12 +243,12 @@ function BotonesBuilderContent() {
 
         {/* DERECHA: SIDEBAR DE ORDEN */}
         <div className="w-full lg:col-span-1">
-          <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-200 dark:border-gray-800 sticky top-24 shadow-xl">
-             <h3 className="font-black text-xl mb-6 text-[#d32f2f] uppercase tracking-tight">Detalles de Orden</h3>
+          <div className="bg-white dark:bg-[#111] p-10 rounded-3xl border border-gray-200 dark:border-gray-800 sticky top-24 shadow-2xl flex flex-col gap-6">
+             <h3 className="font-black text-2xl mb-2 text-[#d32f2f] uppercase tracking-tight text-center">Detalles de Orden</h3>
              
-             <div className="relative h-64 w-full flex items-center justify-center mb-6">
+             <div className="relative h-64 w-full flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-2">
                <div 
-                  className="relative flex items-center justify-center transition-transform duration-500 ease-in-out"
+                  className="relative flex items-center justify-center transition-transform duration-500 ease-in-out hover:scale-105"
                   style={{ transform: `scale(${parseFloat(selectedSize.id) / 5.5})` }}
                 >
                   <div className="relative shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-full overflow-hidden" style={{ width: 250, height: 250 }}>
@@ -256,30 +273,31 @@ function BotonesBuilderContent() {
                 </div>
              </div>
 
-             <div className="flex flex-col gap-4 mb-6 border-t border-gray-100 dark:border-gray-800 pt-6">
+             <div className="flex flex-col gap-5 border-t border-gray-100 dark:border-gray-800 pt-6">
                 <div>
                   <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">1. Modelo:</span>
-                  <div className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 rounded p-3 font-bold text-sm">Botón {selectedSize.label}</div>
+                  <div className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 rounded-lg p-4 font-bold text-base">Botón {selectedSize.label}</div>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">2. Cantidad Total (Mínimo 75):</span>
-                  <input type="number" min="75" value={quantity} onChange={handleQuantityChange} onBlur={handleQuantityBlur} className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 rounded p-3 text-center font-black outline-none" />
+                  <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">2. Cantidad Total (Mín 75):</span>
+                  <input type="number" min="75" value={quantity} onChange={handleQuantityChange} onBlur={handleQuantityBlur} className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center font-black outline-none text-lg" />
                 </div>
              </div>
 
-             <div className="text-right border-t border-gray-100 dark:border-gray-800 pt-4 mb-6">
-                <div className="text-xs font-bold text-gray-500 uppercase">Subtotal</div>
-                <div className="text-4xl font-black text-[#d32f2f]">Q{(selectedSize.price * Math.max(quantity, 75)).toFixed(2)}</div>
+             <div className="text-right border-t border-gray-100 dark:border-gray-800 pt-6 mt-2">
+                <div className="text-sm font-bold text-gray-500 uppercase mb-1">Subtotal</div>
+                <div className="text-5xl font-black text-[#d32f2f]">Q{(selectedSize.price * Math.max(quantity, 75)).toFixed(2)}</div>
              </div>
              
-             <div className="flex items-start gap-3 mb-6 bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl">
-                <input type="checkbox" id="terms_side" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-[#d32f2f]" />
-                <label htmlFor="terms_side" className="text-xs text-gray-600 dark:text-gray-400">
-                  <span className="font-bold text-black dark:text-white uppercase">Garantía Crown:</span> Confirmo el diseño, tamaño y la revisión ortográfica.
+             <div className="flex items-start gap-4 bg-red-50 dark:bg-red-900/20 p-5 rounded-xl mt-4">
+                <input type="checkbox" id="terms_side" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1 w-6 h-6 accent-[#d32f2f]" />
+                <label htmlFor="terms_side" className="text-sm text-gray-700 dark:text-gray-300 leading-tight">
+                  <span className="font-black text-black dark:text-white uppercase block mb-1">Garantía Crown:</span> 
+                  Confirmo el diseño, tamaño y la revisión ortográfica.
                 </label>
              </div>
              
-             <button onClick={handleAddToCart} disabled={!acceptedTerms} className="w-full py-4 bg-[#d32f2f] hover:bg-red-700 disabled:bg-gray-400 text-white font-black uppercase rounded-xl transition-all shadow-lg hover:scale-105">
+             <button onClick={handleAddToCart} disabled={!acceptedTerms} className="w-full py-5 mt-2 bg-[#d32f2f] hover:bg-red-700 disabled:bg-gray-400 text-white font-black uppercase text-lg rounded-xl transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02]">
                 Añadir al Carrito
              </button>
           </div>
@@ -307,7 +325,7 @@ export default function BotonesBuilderPage() {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-[#d32f2f] font-black uppercase text-sm">Flujo de Producción Masiva</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Crea el diseño de tu botón. Todos los botones de este lote compartirán el mismo diseño maestro.</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Crea el diseño de tu botón. Puedes mover y redimensionar textos. Todos los botones de este lote compartirán el mismo diseño maestro.</p>
             </div>
           </div>
         </div>
