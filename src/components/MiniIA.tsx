@@ -69,15 +69,15 @@ export default function MiniIA() {
       const lowerInput = inputValue.toLowerCase();
       
       if (lowerInput.includes("mundo") || lowerInput.includes("fútbol") || lowerInput.includes("futbol")) {
-        response = "¡Excelente! Para fútbol te sugiero nuestra 'Copa del Mundo' réplica o trofeos de columna con figura de balón.";
+        response = "¡Excelente! Para fútbol te sugiero nuestra 'Copa del Mundo' réplica o trofeos de columna con figura de balón. Visita nuestro catálogo en /categorias para verlos.";
       } else if (lowerInput.includes("natacion") || lowerInput.includes("natación") || lowerInput.includes("agua")) {
-        response = "Para deportes acuáticos, nuestras medallas de natación con acabado especial son las más vendidas.";
+        response = "Para deportes acuáticos, nuestras medallas de natación con acabado especial son las más vendidas. Encuéntralas en /categorias.";
       } else if (lowerInput.includes("basquet") || lowerInput.includes("baloncesto")) {
-        response = "¡Claro! El 'Trofeo de Basquetball' en acrílico o resina es perfecto para destacar a los mejores encestadores.";
-      } else if (lowerInput.includes("empresa") || lowerInput.includes("vendedor") || lowerInput.includes("trabajo")) {
-        response = "Para reconocimientos corporativos, te recomiendo nuestras elegantes Plaquetas MDF con Grabado Láser o los Vidrios con Lámina.";
+        response = "¡Claro! El 'Trofeo de Basquetball' en acrílico o resina es perfecto para destacar a los mejores encestadores. Explora en /categorias.";
+      } else if (lowerInput.includes("empresa") || lowerInput.includes("vendedor") || lowerInput.includes("trabajo") || lowerInput.includes("colaborador") || lowerInput.includes("formal") || lowerInput.includes("organización") || lowerInput.includes("organizacion")) {
+        response = "Para reconocimientos corporativos formales y destacar a un colaborador, te recomiendo nuestras elegantes Plaquetas MDF de Madera o los Reconocimientos en Vidrio Templado. Puedes diseñarlos desde /categorias.";
       } else {
-        response = "Esa es una gran ocasión. Te sugiero explorar nuestros Productos Destacados, que se adaptan a cualquier evento especial. ¿Te gustaría ver trofeos o medallas?";
+        response = "Esa es una gran ocasión. Te sugiero explorar nuestros Productos Destacados en /categorias, que se adaptan a cualquier evento especial. Tenemos trofeos, medallas, plaquetas y más.";
       }
 
       setMessages(prev => [...prev, { role: 'ai', text: response }]);

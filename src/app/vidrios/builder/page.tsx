@@ -410,8 +410,17 @@ function VidriosBuilderContent() {
           <div className="bg-white dark:bg-[#111] p-10 rounded-3xl border border-gray-200 dark:border-gray-800 sticky top-24 shadow-2xl flex flex-col gap-6">
              <h3 className="font-black text-2xl mb-2 text-[#d32f2f] uppercase tracking-tight text-center">Detalles de Orden</h3>
              
-             <div className="relative h-64 w-full flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+             <div className="relative h-96 w-full flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
                 <img src={`/categorias/vidrio ${defaultModelId}.png`} className="h-full w-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform" alt="Vidrio" />
+             </div>
+
+             <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500 p-4 rounded-r-lg mt-2">
+               <h3 className="text-xs font-black text-yellow-800 dark:text-yellow-500 uppercase tracking-widest mb-2">Características del Producto</h3>
+               <ul className="text-xs text-yellow-700 dark:text-yellow-600 list-disc list-inside flex flex-col gap-1">
+                 <li><strong>Material:</strong> Cristal templado de 10mm de grosor con bordes biselados.</li>
+                 <li><strong>Base:</strong> Base de cristal sólido o madera elegante según modelo.</li>
+                 <li><strong>Personalización:</strong> Lámina impresa en alta definición o grabado sandblast.</li>
+               </ul>
              </div>
 
              <div className="flex flex-col gap-5 border-t border-gray-100 dark:border-gray-800 pt-6">

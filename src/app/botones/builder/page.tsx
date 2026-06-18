@@ -246,7 +246,7 @@ function BotonesBuilderContent() {
           <div className="bg-white dark:bg-[#111] p-10 rounded-3xl border border-gray-200 dark:border-gray-800 sticky top-24 shadow-2xl flex flex-col gap-6">
              <h3 className="font-black text-2xl mb-2 text-[#d32f2f] uppercase tracking-tight text-center">Detalles de Orden</h3>
              
-             <div className="relative h-64 w-full flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-2">
+             <div className="relative h-96 w-full flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-2">
                <div 
                   className="relative flex items-center justify-center transition-transform duration-500 ease-in-out hover:scale-105"
                   style={{ transform: `scale(${parseFloat(selectedSize.id) / 5.5})` }}
@@ -271,6 +271,15 @@ function BotonesBuilderContent() {
                     </div>
                   </div>
                 </div>
+             </div>
+
+             <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500 p-4 rounded-r-lg mt-2">
+               <h3 className="text-xs font-black text-yellow-800 dark:text-yellow-500 uppercase tracking-widest mb-2">Características del Producto</h3>
+               <ul className="text-xs text-yellow-700 dark:text-yellow-600 list-disc list-inside flex flex-col gap-1">
+                 <li><strong>Material:</strong> Base metálica resistente a la corrosión.</li>
+                 <li><strong>Superficie:</strong> Impresión fotográfica con recubrimiento brillante (Mylar).</li>
+                 <li><strong>Sujeción:</strong> Gancho tipo alfiler de alta seguridad.</li>
+               </ul>
              </div>
 
              <div className="flex flex-col gap-5 border-t border-gray-100 dark:border-gray-800 pt-6">

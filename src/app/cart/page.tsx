@@ -114,7 +114,7 @@ export default function CartPage() {
                           </svg>
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Ref: {item.details}</p>
+                      <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">SKU: {item.details}</p>
                       
                       <div className="text-sm font-bold text-gray-600 dark:text-gray-400 mb-2">Qty: {itemQty}</div>
 
