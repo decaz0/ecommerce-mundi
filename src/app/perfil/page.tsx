@@ -19,7 +19,7 @@ export default function PerfilPage() {
     }
     
     setNickname(localStorage.getItem("premia_nickname") || "Usuario Estrella");
-    setEmail(localStorage.getItem("premia_email") || "usuario@kemik.gt");
+    setEmail(localStorage.getItem("premia_email") || "usuario@correo.com");
     setIsLoaded(true);
   }, [router]);
 

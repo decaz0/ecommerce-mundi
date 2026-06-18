@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import { guatemalaData, departments } from "../../utils/guatemala";
 
 interface CartItem {
   id: string;
@@ -30,6 +31,12 @@ export default function CheckoutPage() {
   const [municipality, setMunicipality] = useState("Guatemala");
   const [exactAddress, setExactAddress] = useState("");
   const [reference, setReference] = useState("");
+  
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDept = e.target.value;
+    setDepartment(newDept);
+    setMunicipality(guatemalaData[newDept][0]);
+  };
   
   const [nit, setNit] = useState("");
   const [billingName, setBillingName] = useState("");
@@ -182,18 +189,18 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Departamento *</label>
-                      <select required value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm">
-                        <option value="Guatemala">Guatemala</option>
-                        <option value="Sacatepequez">Sacatepéquez</option>
-                        <option value="Escuintla">Escuintla</option>
+                      <select required value={department} onChange={handleDepartmentChange} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm">
+                        {departments.map((dept) => (
+                          <option key={dept} value={dept}>{dept}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Municipio *</label>
                       <select required value={municipality} onChange={(e) => setMunicipality(e.target.value)} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm">
-                        <option value="Guatemala">Guatemala</option>
-                        <option value="Mixco">Mixco</option>
-                        <option value="Villa Nueva">Villa Nueva</option>
+                        {guatemalaData[department]?.map((muni) => (
+                          <option key={muni} value={muni}>{muni}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -232,7 +239,7 @@ export default function CheckoutPage() {
                   <input type="text" value={billingAddress} onChange={(e) => setBillingAddress(e.target.value)} placeholder="Ciudad" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm" />
                 </div>
                 <p className="text-xs text-gray-500">
-                  Si este NIT es exento de IVA, escríbenos a <a href="mailto:conta@kemik.gt" className="underline text-blue-500">conta@kemik.gt</a>
+                  Si este NIT es exento de IVA, escríbenos a <a href="mailto:conta@correo.com" className="underline text-blue-500">conta@correo.com</a>
                 </p>
               </div>
             </div>

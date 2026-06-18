@@ -10,7 +10,7 @@ const INITIAL_MESSAGES = [
 ];
 
 export default function MiniIA() {
-  const [messages, setMessages] = useState<{ role: 'ai' | 'user', text: string }[]>([]);
+  const [messages, setMessages] = useState<{ role: 'ai' | 'user', text: string, image?: string, link?: string }[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(true);
   const [typingIndex, setTypingIndex] = useState(0);
@@ -66,21 +66,33 @@ export default function MiniIA() {
     // Simulate AI response
     setTimeout(() => {
       let response = "";
+      let image = "";
+      let link = "";
       const lowerInput = inputValue.toLowerCase();
       
-      if (lowerInput.includes("mundo") || lowerInput.includes("fútbol") || lowerInput.includes("futbol")) {
-        response = "¡Excelente! Para fútbol te sugiero nuestra 'Copa del Mundo' réplica o trofeos de columna con figura de balón. Visita nuestro catálogo en /categorias para verlos.";
-      } else if (lowerInput.includes("natacion") || lowerInput.includes("natación") || lowerInput.includes("agua")) {
-        response = "Para deportes acuáticos, nuestras medallas de natación con acabado especial son las más vendidas. Encuéntralas en /categorias.";
-      } else if (lowerInput.includes("basquet") || lowerInput.includes("baloncesto")) {
-        response = "¡Claro! El 'Trofeo de Basquetball' en acrílico o resina es perfecto para destacar a los mejores encestadores. Explora en /categorias.";
-      } else if (lowerInput.includes("empresa") || lowerInput.includes("vendedor") || lowerInput.includes("trabajo") || lowerInput.includes("colaborador") || lowerInput.includes("formal") || lowerInput.includes("organización") || lowerInput.includes("organizacion")) {
-        response = "Para reconocimientos corporativos formales y destacar a un colaborador, te recomiendo nuestras elegantes Plaquetas MDF de Madera o los Reconocimientos en Vidrio Templado. Puedes diseñarlos desde /categorias.";
+      if (lowerInput.includes("mundo") || lowerInput.includes("copa")) {
+        response = "Lo siento, no contamos con réplicas de la Copa del Mundo, pero te puedo recomendar nuestros Trofeos de Columna Deportiva con figura de fútbol.";
+        image = "/categorias/trofeo clasico.png";
+        link = "/trofeos";
+      } else if (lowerInput.includes("futbol") || lowerInput.includes("fútbol")) {
+        response = "Para fútbol tenemos el excelente Trofeo de Columna Deportiva con figura especial. Haz clic en la imagen para personalizarlo.";
+        image = "/categorias/trofeo clasico.png";
+        link = "/trofeos";
+      } else if (lowerInput.includes("formal") || lowerInput.includes("empresa") || lowerInput.includes("colaborador") || lowerInput.includes("organización")) {
+        response = "Si buscas formalidad, nuestras Plaquetas de Madera MDF son ideales para reconocer a un colaborador o evento corporativo.";
+        image = "/categorias/plaqueta.png";
+        link = "/plaquetas";
+      } else if (lowerInput.includes("natacion") || lowerInput.includes("natación") || lowerInput.includes("agua") || lowerInput.includes("basquet") || lowerInput.includes("baloncesto") || lowerInput.includes("deporte")) {
+        response = "Para este deporte, te recomiendo nuestras Medallas Personalizadas, en ellas puedes grabar la categoría, el lugar y la fecha exacta de tu evento.";
+        image = "/categorias/medalla.png";
+        link = "/medallas";
       } else {
-        response = "Esa es una gran ocasión. Te sugiero explorar nuestros Productos Destacados en /categorias, que se adaptan a cualquier evento especial. Tenemos trofeos, medallas, plaquetas y más.";
+        response = "Te sugiero revisar nuestras Medallas Personalizadas, puedes grabar categoría, lugar y fecha, adaptándose a cualquier evento.";
+        image = "/categorias/medalla.png";
+        link = "/medallas";
       }
 
-      setMessages(prev => [...prev, { role: 'ai', text: response }]);
+      setMessages(prev => [...prev, { role: 'ai', text: response, image, link }]);
       setIsTyping(false);
     }, 1500);
   };
@@ -100,12 +112,24 @@ export default function MiniIA() {
 
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto flex flex-col gap-3 mb-4 pr-2 scrollbar-thin">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-            msg.role === 'ai' 
-              ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 self-start rounded-tl-sm' 
-              : 'bg-premia-red text-white self-end rounded-tr-sm'
+          <div key={idx} className={`max-w-[85%] flex flex-col gap-2 ${
+            msg.role === 'ai' ? 'self-start' : 'self-end'
           }`}>
-            {msg.text}
+            <div className={`p-3 rounded-2xl text-sm ${
+              msg.role === 'ai' 
+                ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm' 
+                : 'bg-premia-red text-white rounded-tr-sm'
+            }`}>
+              {msg.text}
+            </div>
+            {msg.image && msg.link && (
+              <a href={msg.link} className="block mt-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:scale-105 transition-transform drop-shadow-md p-2">
+                <img src={msg.image} alt="Producto Recomendado" className="w-full h-32 object-contain" />
+                <div className="text-center bg-[#d32f2f] text-white text-[10px] font-bold uppercase py-1 mt-2 rounded">
+                  Personalizar
+                </div>
+              </a>
+            )}
           </div>
         ))}
         

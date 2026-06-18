@@ -26,7 +26,7 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
     if (email.trim()) {
       localStorage.setItem("premia_email", email.trim());
     } else if (!localStorage.getItem("premia_email")) {
-      localStorage.setItem("premia_email", "usuario@kemik.gt");
+      localStorage.setItem("premia_email", "usuario@correo.com");
     }
     
     window.dispatchEvent(new Event("auth_changed"));

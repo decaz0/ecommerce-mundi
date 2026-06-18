@@ -138,8 +138,8 @@ export default function Header() {
                         localStorage.removeItem("premia_logged_in");
                         // We don't remove the nickname, so it remembers them next time they login
                         window.dispatchEvent(new Event("auth_changed"));
-                        if (pathname === '/checkout') {
-                          router.push('/cart');
+                        if (pathname === '/checkout' || pathname === '/perfil') {
+                          router.push('/');
                         }
                       }}
                       className="w-full text-left px-4 py-3 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-800"
