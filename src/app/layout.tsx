@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
 import "./globals.css";
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-outfit",
+});
 
 export const metadata: Metadata = {
   title: "Grupo Premia | Trofeos y Reconocimientos",
@@ -16,7 +23,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body>
+      <body className={`${outfit.variable} font-sans`}>
         <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
           <main className="flex-1 flex flex-col">
             {children}

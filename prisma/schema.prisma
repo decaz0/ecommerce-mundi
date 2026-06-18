@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String           @id @default(uuid())
+  sku         String           @unique
+  name        String
+  description String?
+  categoryId  String?
+  category    Category?        @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id                String   @id @default(uuid())
+  productId         String
+  
+  // Jerarquía de Atributos
+  size              String   // ej. "L", "M"
+  colorId           String   // Relación al Catálogo
+  figureId          String   // Relación al Catálogo
+  baseTypeId        String   // Relación al Catálogo
+  customizationType String   // "TEXT_LOGO", "LOGO_ONLY", "TEXT_ONLY", "NONE"
+  
+  // Datos Finales
+  sku               String   @unique
+  price             Decimal
+  imageUrl          String?  // Foto del producto ya terminado
+  logoArea          String?  // JSON: { x, y, width, height } en % relativo a la imagen
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relaciones
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color             Color    @relation(fields: [colorId], references: [id])
+  figure            Figure   @relation(fields: [figureId], references: [id])
+  baseType          BaseType @relation(fields: [baseTypeId], references: [id])
+
+  // Configuraciones Condicionales de Texto (1-a-Muchos)
+  typographies      VariantTypography[]
+  textLines         VariantTextLine[]
+}
+
+// ------------------------------------
+// Catálogos Globales (Inventario)
+// ------------------------------------
+
+model BaseComponent {
+  id        String   @id @default(uuid())
+  name      String
+  imageUrl  String?
+  stock     Int      @default(0)
+}
+
+model BaseType {
+  id        String   @id @default(uuid())
+  name      String
+  material  String?
+  imageUrl  String?
+  stock     Int      @default(0)
+  variants  ProductVariant[]
+}
+
+model Figure {
+  id        String   @id @default(uuid())
+  name      String
+  imageUrl  String?
+  stock     Int      @default(0)
+  variants  ProductVariant[]
+}
+
+model Color {
+  id       String         @id @default(uuid())
+  name     String
+  hex      String
+  imageUrl String?
+  stock    Int            @default(0)
+  variants ProductVariant[]
+}
+
+model Typography {
+  id         String              @id @default(uuid())
+  name       String
+  fontUrl    String?
+  variants   VariantTypography[]
+}
+
+// ------------------------------------
+// Modelos Condicionales de Texto
+// ------------------------------------
+
+model VariantTypography {
+  variantId    String
+  typographyId String
+  
+  variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  typography   Typography     @relation(fields: [typographyId], references: [id], onDelete: Cascade)
+
+  @@id([variantId, typographyId])
+}
+
+model VariantTextLine {
+  id        String   @id @default(uuid())
+  variantId String
+  label     String   // ej. "Nombre del Ganador"
+  maxChars  Int      @default(30)
+  
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
