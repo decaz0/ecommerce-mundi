@@ -191,7 +191,7 @@ function BotonesBuilderContent() {
                         Texto Superior
                         <label className="flex items-center gap-1 cursor-pointer ml-2 bg-gray-200 dark:bg-gray-800 px-2 rounded-full py-0.5">
                           <input type="checkbox" checked={masterLine1Curved} onChange={(e) => handleUpdateTemplate("text-1", { isCurved: e.target.checked })} className="accent-[#d32f2f]" />
-                          Curvo
+                          Arco
                         </label>
                       </span>
                       <span className={masterLine1.length === 20 ? 'text-red-500' : ''}>{masterLine1.length}/20</span>
@@ -205,7 +205,7 @@ function BotonesBuilderContent() {
                         Texto Inferior
                         <label className="flex items-center gap-1 cursor-pointer ml-2 bg-gray-200 dark:bg-gray-800 px-2 rounded-full py-0.5">
                           <input type="checkbox" checked={masterLine2Curved} onChange={(e) => handleUpdateTemplate("text-2", { isCurved: e.target.checked })} className="accent-[#d32f2f]" />
-                          Curvo
+                          Arco
                         </label>
                       </span>
                       <span className={masterLine2.length === 20 ? 'text-red-500' : ''}>{masterLine2.length}/20</span>

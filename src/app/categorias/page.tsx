@@ -6,12 +6,12 @@ import Footer from "../../components/Footer";
 
 export default function CategoriasPage() {
   const categories = [
-    { id: "trofeos", name: "Trofeos Clásicos", img: "/categorias/trofeo clasico.png", href: "/trofeos" },
-    { id: "plasma", name: "Trofeos Plasma", img: "/categorias/trofeo plasma.png", href: "/trofeos-plasma" },
-    { id: "medallas", name: "Medallas", img: "/categorias/medalla.png", href: "/medallas" },
-    { id: "vidrios", name: "Reconocimientos en Vidrio", img: "/categorias/vidrio 1.png", href: "/vidrios" },
-    { id: "plaquetas", name: "Plaquetas de Madera", img: "/categorias/plaqueta.png", href: "/plaquetas" },
-    { id: "botones", name: "Botones Publicitarios", img: "/categorias/boton.png", href: "/botones" }
+    { id: "trofeos", name: "Trofeos Clásicos", img: "/categorias/trofeo clasico.png", href: "/trofeos/builder" },
+    { id: "plasma", name: "Reconocimientos Figuras Metal", img: "/categorias/trofeo plasma.png", href: "/trofeos-plasma/builder" },
+    { id: "medallas", name: "Medallas", img: "/categorias/medalla.png", href: "/medallas/builder" },
+    { id: "vidrios", name: "Reconocimientos en Vidrio", img: "/categorias/vidrio 1.png", href: "/vidrios/builder" },
+    { id: "plaquetas", name: "Plaquetas de Madera", img: "/categorias/plaqueta.png", href: "/plaquetas/builder" },
+    { id: "botones", name: "Botones Publicitarios", img: "/categorias/boton.png", href: "/botones/builder" }
   ];
 
   return (

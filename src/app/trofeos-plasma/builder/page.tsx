@@ -163,7 +163,7 @@ function TrofeoPlasmaBuilderContent() {
 
     const cartItem = {
       id: Date.now().toString(),
-      type: "Trofeo Plasma",
+      type: "Reconocimiento Figura Metal",
       details: `Diseño Estelar Lote x${quantity}`,
       price: 250,
       quantity: quantity,
@@ -371,14 +371,14 @@ function TrofeoPlasmaBuilderContent() {
              <h3 className="font-black text-2xl mb-2 text-[#d32f2f] uppercase tracking-tight text-center">Detalles de Orden</h3>
              
              <div className="relative h-96 w-full flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-                <img src="/categorias/trofeo plasma.png" className="h-full w-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform" alt="Trofeo Plasma" />
+                <img src="/categorias/trofeo plasma.png" className="h-full w-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform" alt="Reconocimiento Figura Metal" />
              </div>
 
              <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500 p-4 rounded-r-lg mt-2">
                <h3 className="text-xs font-black text-yellow-800 dark:text-yellow-500 uppercase tracking-widest mb-2">Características del Producto</h3>
                <ul className="text-xs text-yellow-700 dark:text-yellow-600 list-disc list-inside flex flex-col gap-1">
                  <li><strong>Material:</strong> Acrílico transparente premium con base sólida elegante.</li>
-                 <li><strong>Diseño:</strong> Estilo plasma vanguardista.</li>
+                 <li><strong>Diseño:</strong> Estilo vanguardista en metal.</li>
                  <li><strong>Personalización:</strong> Grabado directo de alta definición.</li>
                </ul>
              </div>
@@ -425,7 +425,7 @@ export default function TrofeoPlasmaBuilderPage() {
         <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
           <Link href="/" className="hover:text-[#d32f2f] transition-colors">Inicio</Link> 
           <span>/</span> 
-          <Link href="/trofeos-plasma" className="hover:text-[#d32f2f] transition-colors">Trofeos Plasma</Link>
+          <Link href="/trofeos-plasma" className="hover:text-[#d32f2f] transition-colors">Reconocimientos Figuras Metal</Link>
           <span>/</span> 
           <span className="text-black dark:text-white">Diseñador B2B</span>
         </div>

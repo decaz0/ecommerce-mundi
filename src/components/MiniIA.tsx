@@ -73,23 +73,23 @@ export default function MiniIA() {
       if (lowerInput.includes("mundo") || lowerInput.includes("copa")) {
         response = "Lo siento, no contamos con réplicas de la Copa del Mundo, pero te puedo recomendar nuestros Trofeos de Columna Deportiva con figura de fútbol.";
         image = "/categorias/trofeo clasico.png";
-        link = "/trofeos";
+        link = "/trofeos/builder/customize?model=futbol";
       } else if (lowerInput.includes("futbol") || lowerInput.includes("fútbol")) {
         response = "Para fútbol tenemos el excelente Trofeo de Columna Deportiva con figura especial. Haz clic en la imagen para personalizarlo.";
         image = "/categorias/trofeo clasico.png";
-        link = "/trofeos";
+        link = "/trofeos/builder/customize?model=futbol";
       } else if (lowerInput.includes("formal") || lowerInput.includes("empresa") || lowerInput.includes("colaborador") || lowerInput.includes("organización")) {
         response = "Si buscas formalidad, nuestras Plaquetas de Madera MDF son ideales para reconocer a un colaborador o evento corporativo.";
         image = "/categorias/plaqueta.png";
-        link = "/plaquetas";
+        link = "/plaquetas/builder";
       } else if (lowerInput.includes("natacion") || lowerInput.includes("natación") || lowerInput.includes("agua") || lowerInput.includes("basquet") || lowerInput.includes("baloncesto") || lowerInput.includes("deporte")) {
         response = "Para este deporte, te recomiendo nuestras Medallas Personalizadas, en ellas puedes grabar la categoría, el lugar y la fecha exacta de tu evento.";
         image = "/categorias/medalla.png";
-        link = "/medallas";
+        link = "/medallas/builder";
       } else {
         response = "Te sugiero revisar nuestras Medallas Personalizadas, puedes grabar categoría, lugar y fecha, adaptándose a cualquier evento.";
         image = "/categorias/medalla.png";
-        link = "/medallas";
+        link = "/medallas/builder";
       }
 
       setMessages(prev => [...prev, { role: 'ai', text: response, image, link }]);
