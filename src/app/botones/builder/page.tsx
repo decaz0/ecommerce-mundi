@@ -6,12 +6,31 @@ import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 
+import CanvasEditor, { CanvasElement } from "../../../components/CanvasEditor";
+
 const SIZES = [
   { id: "2.5", label: "2.5 cm (Pequeño)", price: 4 },
   { id: "3.5", label: "3.5 cm (Estándar)", price: 5 },
   { id: "4.5", label: "4.5 cm (Mediano)", price: 6 },
   { id: "5.5", label: "5.5 cm (Grande)", price: 7 },
 ];
+
+type LineType = "TEXT" | "ORNAMENT";
+type FontSize = "Small" | "Medium" | "Large";
+type FontStyle = "Normal" | "Bold" | "Italic";
+
+interface LineState {
+  id: string;
+  type: LineType;
+  text: string;
+  size: FontSize;
+  style: FontStyle;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex: number;
+}
 
 function BotonesBuilderContent() {
   const router = useRouter();
@@ -23,8 +42,21 @@ function BotonesBuilderContent() {
   const [imageOffsetY, setImageOffsetY] = useState<number>(50);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const [lines, setLines] = useState<LineState[]>([
+    { id: "l1", type: "TEXT", text: "TEXTO SUPERIOR", size: "Medium", style: "Bold", x: 25, y: 10, width: 150, height: 180, zIndex: 2 },
+    { id: "l2", type: "TEXT", text: "TEXTO INFERIOR", size: "Medium", style: "Bold", x: 25, y: 150, width: 150, height: 40, zIndex: 3 }
+  ]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
+
+  const handleLineChange = (index: number, field: keyof LineState, value: any) => {
+    const newLines = [...lines];
+    newLines[index] = { ...newLines[index], [field]: value };
+    setLines(newLines);
+    setAcceptedTerms(false);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,6 +91,58 @@ function BotonesBuilderContent() {
   const calculateTotal = () => {
     const q = Math.max(quantity, 75);
     return q * selectedSize.price;
+  };
+
+  const getSvgFontSize = (sz: FontSize) => {
+    switch (sz) {
+      case "Large": return 24;
+      case "Small": return 12;
+      case "Medium": default: return 16;
+    }
+  };
+
+  const getCanvasElements = (): CanvasElement[] => {
+    const els: CanvasElement[] = [];
+    if (imagePreview) {
+      els.push({
+        id: "btn-img",
+        type: "image",
+        x: 0,
+        y: (imageOffsetY - 50) * 2, // Ajuste de Y para que se mueva en el canvas de 200x200
+        width: 200,
+        height: 200,
+        zIndex: 1,
+        src: imagePreview
+      });
+    }
+    lines.forEach((line) => {
+      els.push({
+        id: line.id,
+        type: "text",
+        x: line.x,
+        y: line.y,
+        width: line.width,
+        height: line.height,
+        zIndex: line.zIndex,
+        text: line.text,
+        fontSize: getSvgFontSize(line.size),
+        fontStyle: line.style,
+        color: "#000000",
+        fontFamily: line.style === "Italic" ? "serif" : "sans-serif",
+        isCurved: line.id === "l1" // Sólo el primero lo hacemos curvo por defecto si queremos, o ambos.
+      });
+    });
+    return els;
+  };
+
+  const handleElementsChange = (newElements: CanvasElement[]) => {
+    const newLines = lines.map(line => {
+      const el = newElements.find(e => e.id === line.id);
+      if (el) return { ...line, x: el.x, y: el.y, width: el.width, height: el.height, zIndex: el.zIndex };
+      return line;
+    });
+    setLines(newLines);
+    setAcceptedTerms(false);
   };
 
   const handleAddToCartAttempt = () => {
@@ -121,17 +205,21 @@ function BotonesBuilderContent() {
                 
                 {/* Círculo Mágico de Inserción (Simulando el área imprimible del botón) */}
                 <div className="absolute top-[10%] bottom-[10%] left-[10%] right-[10%] z-20 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-inner">
-                  {imagePreview ? (
-                    <img 
-                      src={imagePreview} 
-                      alt="Tu Diseño" 
-                      className="w-full h-full object-cover"
-                      style={{ objectPosition: `center ${imageOffsetY}%` }}
-                    />
-                  ) : (
-                    <span className="text-gray-300 font-black text-2xl uppercase tracking-widest text-center px-4 opacity-50">
-                      Sube tu Imagen
-                    </span>
+                  <CanvasEditor
+                    elements={getCanvasElements()}
+                    onChange={handleElementsChange}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    width={200}
+                    height={200}
+                    enableOverlapDetection={true}
+                  />
+                  {!imagePreview && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="text-gray-300 font-black text-2xl uppercase tracking-widest text-center px-4 opacity-50">
+                        Sube tu Imagen
+                      </span>
+                    </div>
                   )}
                 </div>
                 
@@ -266,11 +354,57 @@ function BotonesBuilderContent() {
                       onClick={removeImage} 
                       className="self-start text-xs font-bold text-red-500 uppercase tracking-widest hover:bg-red-50 px-4 py-2 border border-red-200 rounded-lg transition-colors"
                     >
-                      Cambiar Diseño
+                      Cambiar Diseño Gráfico
                     </button>
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* 3. TEXTO SOBRE EL BOTÓN */}
+            <div className="flex flex-col gap-6">
+              <div className="text-sm font-bold text-[#d32f2f] uppercase border-b pb-2">3. Texto Adicional (Opcional)</div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {lines.map((line, idx) => (
+                  <div key={idx} className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-[#161616] rounded-xl border border-gray-200 dark:border-gray-800">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-black uppercase tracking-widest text-gray-500">{idx === 0 ? "Texto Superior Curvo" : "Texto Inferior"}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <input 
+                        type="text" 
+                        maxLength={20}
+                        value={line.text}
+                        onChange={(e) => handleLineChange(idx, "text", e.target.value)}
+                        className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-md px-3 py-1.5 text-sm outline-none transition-colors focus:border-[#d32f2f]"
+                        placeholder="Escribe texto..."
+                      />
+                      <div className="flex gap-2 mt-1">
+                        <select 
+                          value={line.size} 
+                          onChange={(e) => handleLineChange(idx, "size", e.target.value)}
+                          className="flex-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded px-1 py-1 text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400"
+                        >
+                          <option value="Large">Grande</option>
+                          <option value="Medium">Mediana</option>
+                          <option value="Small">Pequeña</option>
+                        </select>
+                        <select 
+                          value={line.style} 
+                          onChange={(e) => handleLineChange(idx, "style", e.target.value)}
+                          className="flex-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded px-1 py-1 text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400"
+                        >
+                          <option value="Normal">Normal</option>
+                          <option value="Bold">Negrita</option>
+                          <option value="Italic">Cursiva</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
           </div>

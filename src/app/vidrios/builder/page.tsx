@@ -6,15 +6,23 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 
+import CanvasEditor, { CanvasElement } from "../../../components/CanvasEditor";
+
 type FontSize = "Small" | "Medium" | "Large";
 type FontStyle = "Normal" | "Italic" | "Bold";
 type LineType = "TEXT" | "ORNAMENT";
 
 interface LineState {
+  id: string;
   type: LineType;
   text: string;
   size: FontSize;
   style: FontStyle;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex: number;
 }
 
 const ORNAMENT_SYMBOL = "❦ ❧ ❦";
@@ -43,13 +51,15 @@ function VidriosBuilderContent() {
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
 
   const [lines, setLines] = useState<LineState[]>([
-    { type: "TEXT", text: "Reconocimiento", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "NOMBRE PREMIADO", size: "Large", style: "Bold" },
-    { type: "ORNAMENT", text: "", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "Por su gran", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "desempeño", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "SU EMPRESA", size: "Medium", style: "Bold" },
+    { id: "l1", type: "TEXT", text: "Reconocimiento", size: "Medium", style: "Normal", x: 20, y: 150, width: 260, height: 30, zIndex: 1 },
+    { id: "l2", type: "TEXT", text: "NOMBRE PREMIADO", size: "Large", style: "Bold", x: 20, y: 190, width: 260, height: 40, zIndex: 2 },
+    { id: "l3", type: "ORNAMENT", text: "", size: "Medium", style: "Normal", x: 20, y: 240, width: 260, height: 30, zIndex: 3 },
+    { id: "l4", type: "TEXT", text: "Por su gran", size: "Medium", style: "Normal", x: 20, y: 280, width: 260, height: 30, zIndex: 4 },
+    { id: "l5", type: "TEXT", text: "desempeño", size: "Medium", style: "Normal", x: 20, y: 320, width: 260, height: 30, zIndex: 5 },
+    { id: "l6", type: "TEXT", text: "SU EMPRESA", size: "Medium", style: "Bold", x: 20, y: 360, width: 260, height: 30, zIndex: 6 },
   ]);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const handleTextChange = (idx: number, val: string) => {
     if (val.length > MAX_CHARS) return;
@@ -108,19 +118,59 @@ function VidriosBuilderContent() {
     router.push("/cart");
   };
 
-  const getFontSizeClass = (sz: FontSize) => {
+  const getSvgFontSize = (sz: FontSize) => {
     switch (sz) {
-      case "Large": return "text-2xl sm:text-4xl";
-      case "Small": return "text-sm sm:text-lg";
-      case "Medium": default: return "text-lg sm:text-2xl";
+      case "Large": return 28;
+      case "Small": return 14;
+      case "Medium": default: return 18;
     }
   };
-  const getFontStyleClass = (st: FontStyle) => {
-    switch (st) {
-      case "Bold": return "font-bold";
-      case "Italic": return "italic";
-      case "Normal": default: return "font-normal";
+
+  const getCanvasElements = (): CanvasElement[] => {
+    const els: CanvasElement[] = [];
+    if (logoPreview) {
+      els.push({
+        id: "logo",
+        type: "image",
+        x: 100,
+        y: 20,
+        width: 100,
+        height: 100,
+        zIndex: 0,
+        src: logoPreview
+      });
     }
+
+    lines.forEach((line) => {
+      els.push({
+        id: line.id,
+        type: "text",
+        x: line.x,
+        y: line.y,
+        width: line.width,
+        height: line.height,
+        zIndex: line.zIndex,
+        text: line.type === "ORNAMENT" ? ORNAMENT_SYMBOL : line.text,
+        fontSize: line.type === "ORNAMENT" ? 24 : getSvgFontSize(line.size),
+        fontStyle: line.style,
+        color: "#000000",
+        fontFamily: line.style === "Italic" ? "serif" : "sans-serif"
+      });
+    });
+
+    return els;
+  };
+
+  const handleElementsChange = (newElements: CanvasElement[]) => {
+    const newLines = lines.map(line => {
+      const el = newElements.find(e => e.id === line.id);
+      if (el) {
+        return { ...line, x: el.x, y: el.y, width: el.width, height: el.height, zIndex: el.zIndex };
+      }
+      return line;
+    });
+    setLines(newLines);
+    setAcceptedTerms(false);
   };
 
   // Coordenadas corregidas y ampliadas
@@ -338,27 +388,19 @@ function VidriosBuilderContent() {
             
             <div className="w-full bg-gray-50 dark:bg-[#151515] p-8 lg:p-12 flex items-center justify-center min-h-[500px]">
               <div 
-                className="w-[95%] max-w-[480px] aspect-[3/4] bg-gradient-to-br from-[#d4af37] via-[#ffe066] to-[#b38728] shadow-[0_20px_50px_rgba(212,175,55,0.3)] p-10 flex flex-col items-center justify-center transition-all duration-500 relative mx-auto"
+                className="w-full max-w-[300px] aspect-[4/5] bg-gradient-to-br from-[#d4af37] via-[#ffe066] to-[#b38728] shadow-[0_20px_50px_rgba(212,175,55,0.3)] p-1 flex flex-col items-center justify-center transition-all duration-500 relative mx-auto"
                 style={{ clipPath: clipPathStyle }}
               >
-                {/* Reflejos de brillo extra para la lámina grande */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 pointer-events-none"></div>
-
-                {logoPreview && (
-                  <div className="w-full h-32 shrink-0 flex items-center justify-center relative border border-dashed border-black/10 mb-6 z-10">
-                    <img src={logoPreview} alt="Logo Detalle" className="max-w-[80%] max-h-full object-contain mix-blend-multiply opacity-90" />
-                  </div>
-                )}
-
-                <div className="w-full text-center font-serif text-black uppercase flex flex-col gap-3 shrink-0 z-10">
-                  {lines.map((line, idx) => (
-                    <div key={idx} className="w-full flex items-center justify-center px-2">
-                      <div className={`w-full flex justify-center break-words text-center leading-tight min-h-[20px] ${line.type === "ORNAMENT" ? "text-3xl" : `${getFontSizeClass(line.size)} ${getFontStyleClass(line.style)}`}`}>
-                        {line.type === "ORNAMENT" ? ORNAMENT_SYMBOL : (line.text || <span className="text-black/10">Línea {idx+1}</span>)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 pointer-events-none z-0"></div>
+                <CanvasEditor
+                  elements={getCanvasElements()}
+                  onChange={handleElementsChange}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                  width={300}
+                  height={400}
+                  enableOverlapDetection={true}
+                />
               </div>
             </div>
           </div>

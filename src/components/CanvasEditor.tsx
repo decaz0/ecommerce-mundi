@@ -332,17 +332,17 @@ export default function CanvasEditor({
 
       {/* Alerta de colisión */}
       {overlapWarning && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white text-sm sm:text-base px-6 py-4 rounded-xl shadow-2xl flex flex-col items-center text-center gap-4 w-[90%] max-w-sm border-2 border-red-400">
-          <span className="font-black text-lg leading-tight">{overlapWarning}</span>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white text-base sm:text-xl px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-6 w-[95%] max-w-lg border-4 border-red-400">
+          <span className="font-black text-2xl leading-tight">{overlapWarning}</span>
           <div className="flex gap-4 w-full">
             <button 
-              className="flex-1 bg-white text-red-600 px-4 py-2 rounded-lg font-black hover:bg-gray-100 transition-colors shadow-md text-sm uppercase"
+              className="flex-1 bg-white text-red-600 px-4 py-3 rounded-xl font-black hover:bg-gray-100 transition-colors shadow-lg text-lg uppercase"
               onClick={(e) => { e.stopPropagation(); setOverlapWarning(null); }}
             >
               Dejarlo así
             </button>
             <button 
-              className="flex-1 bg-red-800 text-white px-4 py-2 rounded-lg font-black hover:bg-red-900 transition-colors shadow-md text-sm uppercase border border-red-500"
+              className="flex-1 bg-red-800 text-white px-4 py-3 rounded-xl font-black hover:bg-red-900 transition-colors shadow-lg text-lg uppercase border-2 border-red-500"
               onClick={handleFixOverlap}
             >
               Arreglarlo

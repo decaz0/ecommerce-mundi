@@ -6,13 +6,21 @@ import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 
+import CanvasEditor, { CanvasElement } from "../../../components/CanvasEditor";
+
 type FontSize = "Small" | "Medium" | "Large";
 type FontStyle = "Normal" | "Bold" | "Italic";
 
 interface LineState {
+  id: string;
   text: string;
   size: FontSize;
   style: FontStyle;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex: number;
 }
 
 const MAX_CHARS = 15;
@@ -21,10 +29,12 @@ export default function MedallasBuilder() {
   const router = useRouter();
 
   const [lines, setLines] = useState<LineState[]>([
-    { text: "1er LUGAR", size: "Medium", style: "Bold" },
-    { text: "Torneo", size: "Small", style: "Normal" },
-    { text: "Regional", size: "Small", style: "Normal" },
+    { id: "l1", text: "1er LUGAR", size: "Medium", style: "Bold", x: 20, y: 100, width: 260, height: 40, zIndex: 1 },
+    { id: "l2", text: "Torneo", size: "Small", style: "Normal", x: 20, y: 150, width: 260, height: 30, zIndex: 2 },
+    { id: "l3", text: "Regional", size: "Small", style: "Normal", x: 20, y: 190, width: 260, height: 30, zIndex: 3 },
   ]);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
@@ -77,74 +87,43 @@ export default function MedallasBuilder() {
   };
 
   const getSvgFontSize = (sz: FontSize, totalLines: number, textLen: number) => {
-    // Escalar la fuente si hay menos líneas
-    const multiplier = totalLines === 1 ? 1.8 : totalLines === 2 ? 1.3 : 1;
+    const multiplier = totalLines === 1 ? 1.5 : 1;
     let baseSize;
     switch (sz) {
-      case "Large": baseSize = 120; break;
-      case "Small": baseSize = 60; break;
-      case "Medium": default: baseSize = 90; break;
+      case "Large": baseSize = 36; break;
+      case "Small": baseSize = 16; break;
+      case "Medium": default: baseSize = 24; break;
     }
-    
-    const requestedSize = baseSize * multiplier;
-    
-    // Auto-ajuste de tamaño para que el texto nunca se salga de la placa
-    // Estimamos que una letra promedio ocupa un 55% del tamaño de fuente en ancho.
-    // El ancho máximo seguro de la lámina es de 900 (sobre 1000 del viewBox).
-    const maxSafeSize = textLen > 0 ? 900 / (textLen * 0.55) : requestedSize;
-    
-    // Retornamos el menor entre el tamaño deseado y el tamaño máximo seguro
-    return Math.min(requestedSize, maxSafeSize);
+    return baseSize * multiplier;
   };
 
-  const getFontStyleClass = (st: FontStyle) => {
-    switch (st) {
-      case "Bold": return "font-black font-sans"; 
-      case "Italic": return "font-serif italic";
-      case "Normal": default: return "font-serif";
-    }
+  const getCanvasElements = (): CanvasElement[] => {
+    return lines.map((line) => ({
+      id: line.id,
+      type: "text",
+      x: line.x,
+      y: line.y,
+      width: line.width,
+      height: line.height,
+      zIndex: line.zIndex,
+      text: line.text,
+      fontSize: getSvgFontSize(line.size, activeLines.length, line.text.length),
+      fontStyle: line.style,
+      color: "#000000",
+      fontFamily: line.style === "Italic" ? "serif" : "sans-serif"
+    }));
   };
 
-  // Renderizador de Placa Unificado
-  const renderPlaqueContent = () => {
-    if (activeLines.length === 0) {
-      return (
-        <div className="w-full h-full flex items-center justify-center text-black/20 font-bold text-lg md:text-2xl uppercase tracking-widest text-center">
-          Vista Previa
-        </div>
-      );
-    }
-
-    return (
-      <svg viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        {activeLines.map((line, idx) => {
-          // Calcular posición Y dinámicamente según la cantidad de líneas
-          let yPos = "50%";
-          if (activeLines.length === 2) {
-            yPos = idx === 0 ? "35%" : "65%";
-          } else if (activeLines.length === 3) {
-            yPos = idx === 0 ? "25%" : idx === 1 ? "50%" : "75%";
-          }
-
-          return (
-            <text 
-              key={idx}
-              x="50%" 
-              y={yPos} 
-              dominantBaseline="middle" 
-              textAnchor="middle" 
-              fill="#000"
-              fontSize={getSvgFontSize(line.size, activeLines.length, line.text.length)}
-              className={getFontStyleClass(line.style)}
-              fontWeight={line.style === 'Bold' ? '900' : 'normal'}
-              fontStyle={line.style === 'Italic' ? 'italic' : 'normal'}
-            >
-              {line.text}
-            </text>
-          );
-        })}
-      </svg>
-    );
+  const handleElementsChange = (newElements: CanvasElement[]) => {
+    const newLines = lines.map(line => {
+      const el = newElements.find(e => e.id === line.id);
+      if (el) {
+        return { ...line, x: el.x, y: el.y, width: el.width, height: el.height, zIndex: el.zIndex };
+      }
+      return line;
+    });
+    setLines(newLines);
+    setAcceptedTerms(false);
   };
 
   return (
@@ -174,8 +153,19 @@ export default function MedallasBuilder() {
                     className="w-full h-auto drop-shadow-2xl relative z-10 block"
                   />
                   
-                  <div className="absolute top-[32.5%] bottom-[21.5%] left-[29.8%] right-[26.2%] z-20 flex flex-col items-center justify-center overflow-hidden rounded-sm bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] border-2 border-[#e6c27a] p-1">
-                    {renderPlaqueContent()}
+                  <div className="absolute top-[32.5%] bottom-[21.5%] left-[29.8%] right-[26.2%] z-20 flex flex-col items-center justify-center overflow-hidden rounded-sm bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] border-2 border-[#e6c27a] pointer-events-none">
+                    <div style={{ transform: 'scale(0.35)', transformOrigin: 'center center' }}>
+                      <CanvasEditor
+                        elements={getCanvasElements()}
+                        onChange={() => {}}
+                        selectedId={null}
+                        onSelect={() => {}}
+                        width={300}
+                        height={300}
+                        readOnly={true}
+                        enableOverlapDetection={false}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -276,8 +266,16 @@ export default function MedallasBuilder() {
               
               <div className="w-full bg-gray-50 dark:bg-[#151515] p-8 lg:p-12 flex items-center justify-center min-h-[400px]">
                 {/* Lámina cuadrada dorada */}
-                <div className="w-full max-w-[300px] aspect-square bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] border-4 border-[#fff7c2] shadow-[0_20px_50px_rgba(179,135,40,0.4)] rounded-sm p-2 flex flex-col items-center justify-center overflow-hidden relative">
-                  {renderPlaqueContent()}
+                <div className="w-full max-w-[300px] aspect-square bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] border-4 border-[#fff7c2] shadow-[0_20px_50px_rgba(179,135,40,0.4)] rounded-sm p-1 flex flex-col items-center justify-center overflow-hidden relative">
+                  <CanvasEditor
+                    elements={getCanvasElements()}
+                    onChange={handleElementsChange}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    width={300}
+                    height={300}
+                    enableOverlapDetection={true}
+                  />
                 </div>
               </div>
             </div>

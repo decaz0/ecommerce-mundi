@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Header from "../../../../components/Header";
 import Footer from "../../../../components/Footer";
 
+import CanvasEditor, { CanvasElement } from "../../../../components/CanvasEditor";
+
 type ColorType = "D" | "R" | "V" | null;
 type FigureType = "F" | "V" | "PM" | "NONE" | null;
 type LineType = "TEXT" | "ORNAMENT";
@@ -13,10 +15,16 @@ type FontSize = "Small" | "Medium" | "Large";
 type FontStyle = "Normal" | "Bold" | "Italic";
 
 interface LineState {
+  id: string;
   type: LineType;
   text: string;
   size: FontSize;
   style: FontStyle;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex: number;
 }
 
 const ORNAMENT_SYMBOL = "❦ ❧ ❦";
@@ -33,10 +41,17 @@ function CustomizeContent() {
   const isPM = figure === "PM";
 
   const [lines, setLines] = useState<LineState[]>([
-    { type: "TEXT", text: "Presentado a:", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "NOMBRE RECEPTOR", size: "Large", style: "Bold" },
-    { type: "ORNAMENT", text: "", size: "Medium", style: "Normal" },
+    { id: "l1", type: "TEXT", text: "Presentado a:", size: "Medium", style: "Normal", x: 20, y: 30, width: 260, height: 30, zIndex: 1 },
+    { id: "l2", type: "TEXT", text: "NOMBRE RECEPTOR", size: "Large", style: "Bold", x: 20, y: 70, width: 260, height: 40, zIndex: 2 },
+    { id: "l3", type: "ORNAMENT", text: "", size: "Medium", style: "Normal", x: 20, y: 110, width: 260, height: 30, zIndex: 3 },
   ]);
+
+  const [pmLines, setPmLines] = useState<LineState[]>([
+    { id: "pm1", type: "TEXT", text: "TEXTO CURVO", size: "Medium", style: "Normal", x: 25, y: 25, width: 150, height: 150, zIndex: 2 }
+  ]);
+
+  const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
+  const [selectedPMId, setSelectedPMId] = useState<string | null>(null);
 
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
   const [medallionPreview, setMedallionPreview] = useState<string | null>(null);
@@ -63,6 +78,13 @@ function CustomizeContent() {
       newLines[index].text = "";
     }
     setLines(newLines);
+    setAcceptedTerms(false);
+  };
+
+  const handlePMLineChange = (index: number, field: keyof LineState, value: any) => {
+    const newLines = [...pmLines];
+    newLines[index] = { ...newLines[index], [field]: value };
+    setPmLines(newLines);
     setAcceptedTerms(false);
   };
 
@@ -134,7 +156,7 @@ function CustomizeContent() {
     }
 
     // Validar Checkbox Términos (si hay algo que aceptar)
-    const hasCustomization = activeLines.length > 0 || medallionPreview !== null;
+    const hasCustomization = activeLines.length > 0 || (isPM && (medallionPreview !== null || pmLines[0].text.trim().length > 0));
     if (hasCustomization && !acceptedTerms) {
       setTermsError(true);
       return; // Detenemos aquí para obligar visualmente al usuario a marcar la casilla
@@ -165,22 +187,96 @@ function CustomizeContent() {
     router.push("/cart");
   };
 
-  // Mapeo SVG Font Size
-  const getSvgFontSize = (sz: FontSize) => {
+  // Mapeo SVG Font Size Base
+  const getSvgFontSize = (sz: FontSize, totalLines: number) => {
+    const multiplier = totalLines === 1 ? 1.5 : 1;
+    let baseSize;
     switch (sz) {
-      case "Large": return "90";
-      case "Small": return "40";
-      case "Medium": default: return "65";
+      case "Large": baseSize = 28; break;
+      case "Small": baseSize = 14; break;
+      case "Medium": default: baseSize = 18; break;
+    }
+    return baseSize * multiplier;
+  };
+
+  // Mapeo SVG Font Size PM (NO se reduce si es curvo)
+  const getPMSvgFontSize = (sz: FontSize) => {
+    switch (sz) {
+      case "Large": return 24;
+      case "Small": return 12;
+      case "Medium": default: return 16;
     }
   };
 
-  // Mapeo CSS Font Style
-  const getFontStyleClass = (st: FontStyle) => {
-    switch (st) {
-      case "Bold": return "font-black font-sans"; 
-      case "Italic": return "font-serif italic";
-      case "Normal": default: return "font-serif";
+  const getCanvasElementsBase = (): CanvasElement[] => {
+    return lines.map((line) => ({
+      id: line.id,
+      type: "text",
+      x: line.x,
+      y: line.y,
+      width: line.width,
+      height: line.height,
+      zIndex: line.zIndex,
+      text: line.type === "ORNAMENT" ? ORNAMENT_SYMBOL : line.text,
+      fontSize: line.type === "ORNAMENT" ? 24 : getSvgFontSize(line.size, activeLines.length),
+      fontStyle: line.style,
+      color: "#000000",
+      fontFamily: line.style === "Italic" ? "serif" : "sans-serif"
+    }));
+  };
+
+  const getCanvasElementsPM = (): CanvasElement[] => {
+    const els: CanvasElement[] = [];
+    if (medallionPreview && !skipMedallion) {
+      els.push({
+        id: "pm-img",
+        type: "image",
+        x: 50,
+        y: 50 + (imageOffsetY - 50),
+        width: 100,
+        height: 100,
+        zIndex: 1,
+        src: medallionPreview
+      });
     }
+    pmLines.forEach((line) => {
+      els.push({
+        id: line.id,
+        type: "text",
+        x: line.x,
+        y: line.y,
+        width: line.width,
+        height: line.height,
+        zIndex: line.zIndex,
+        text: line.text,
+        fontSize: getPMSvgFontSize(line.size),
+        fontStyle: line.style,
+        color: "#000000", // "texto debe ser negro no blanco en el portamedallos"
+        fontFamily: line.style === "Italic" ? "serif" : "sans-serif",
+        isCurved: true
+      });
+    });
+    return els;
+  };
+
+  const handleBaseElementsChange = (newElements: CanvasElement[]) => {
+    const newLines = lines.map(line => {
+      const el = newElements.find(e => e.id === line.id);
+      if (el) return { ...line, x: el.x, y: el.y, width: el.width, height: el.height, zIndex: el.zIndex };
+      return line;
+    });
+    setLines(newLines);
+    setAcceptedTerms(false);
+  };
+
+  const handlePMElementsChange = (newElements: CanvasElement[]) => {
+    const newLines = pmLines.map(line => {
+      const el = newElements.find(e => e.id === line.id);
+      if (el) return { ...line, x: el.x, y: el.y, width: el.width, height: el.height, zIndex: el.zIndex };
+      return line;
+    });
+    setPmLines(newLines);
+    setAcceptedTerms(false);
   };
 
   return (
@@ -210,14 +306,17 @@ function CustomizeContent() {
               <div className="w-full max-w-2xl flex flex-col md:flex-row items-center justify-center gap-8">
                 
                 {/* Medallón Visualizador a la par */}
-                {isPM && medallionPreview && !skipMedallion && (
+                {isPM && (
                   <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-left-4 duration-500">
-                    <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] rounded-full p-[3px] shadow-[0_5px_15px_rgba(0,0,0,0.4)] overflow-hidden">
-                      <img 
-                        src={medallionPreview} 
-                        alt="Medalla Circular" 
-                        className="w-full h-full object-cover rounded-full mix-blend-multiply opacity-90 shadow-inner"
-                        style={{ objectPosition: `center ${imageOffsetY}%` }}
+                    <div className="w-40 h-40 bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] rounded-full p-[3px] shadow-[0_5px_15px_rgba(0,0,0,0.4)] overflow-hidden flex items-center justify-center">
+                      <CanvasEditor
+                        elements={getCanvasElementsPM()}
+                        onChange={handlePMElementsChange}
+                        selectedId={selectedPMId}
+                        onSelect={setSelectedPMId}
+                        width={200}
+                        height={200}
+                        enableOverlapDetection={true}
                       />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Tu Medalla</span>
@@ -225,38 +324,16 @@ function CustomizeContent() {
                 )}
 
                 {/* Placa Dorada Estática y Ancha */}
-                <div className="flex-1 w-full max-w-[500px] h-[130px] bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] border-2 border-[#fff7c2] shadow-[0_10px_30px_rgba(179,135,40,0.4)] rounded-sm p-3 flex flex-col items-center justify-center gap-0 overflow-hidden">
-                  {activeLines.length === 0 && (
-                    <div className="w-full h-full flex items-center justify-center text-black/20 font-bold text-lg uppercase tracking-widest text-center">
-                      Vista Previa de Placa
-                    </div>
-                  )}
-
-                  {activeLines.map((line, idx) => (
-                    <div key={idx} className="w-full flex-1 flex items-center justify-center overflow-hidden min-h-0">
-                      {line.type === "ORNAMENT" ? (
-                        <div className="text-black flex items-center justify-center h-full text-2xl md:text-3xl lg:text-4xl">
-                          {ORNAMENT_SYMBOL}
-                        </div>
-                      ) : (
-                        <svg viewBox="0 0 1000 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full max-h-[100%]">
-                          <text 
-                            x="50%" 
-                            y="50%" 
-                            dominantBaseline="middle" 
-                            textAnchor="middle" 
-                            fill="#000"
-                            fontSize={getSvgFontSize(line.size)}
-                            className={getFontStyleClass(line.style)}
-                            fontWeight={line.style === 'Bold' ? '900' : 'normal'}
-                            fontStyle={line.style === 'Italic' ? 'italic' : 'normal'}
-                          >
-                            {line.text}
-                          </text>
-                        </svg>
-                      )}
-                    </div>
-                  ))}
+                <div className="flex-1 w-full max-w-[400px] h-[150px] bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] border-2 border-[#fff7c2] shadow-[0_10px_30px_rgba(179,135,40,0.4)] rounded-sm p-1 flex flex-col items-center justify-center gap-0 overflow-hidden">
+                  <CanvasEditor
+                    elements={getCanvasElementsBase()}
+                    onChange={handleBaseElementsChange}
+                    selectedId={selectedBaseId}
+                    onSelect={setSelectedBaseId}
+                    width={400}
+                    height={150}
+                    enableOverlapDetection={true}
+                  />
                 </div>
 
               </div>
@@ -355,35 +432,71 @@ function CustomizeContent() {
                     <p className="text-xs text-yellow-700 dark:text-yellow-600">Sube cualquier archivo JPG o PNG. Usa la barra deslizante para enfocar la parte exacta de tu foto en el círculo. Eres 100% responsable del recorte y la calidad.</p>
                   </div>
 
-                  <div className="flex flex-col md:flex-row items-center gap-8">
-                    {!medallionPreview ? (
-                      <div className="w-full md:w-1/2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer" onClick={() => medallionInputRef.current?.click()}>
-                        <div className="w-12 h-12 rounded-full border-2 border-gray-300 mb-3 flex items-center justify-center text-gray-400">+</div>
-                        <span className="text-sm font-bold text-gray-600 dark:text-gray-300">Subir foto (JPG/PNG)</span>
-                        <input type="file" accept=".png,.jpg,.jpeg" className="hidden" ref={medallionInputRef} onChange={handleMedallionUpload} />
+                  <div className="flex flex-col gap-6">
+                    <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-2">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-black uppercase tracking-widest text-gray-500">Texto Curvo</span>
                       </div>
-                    ) : (
-                      <div className="w-full border border-gray-200 dark:border-gray-800 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 bg-gray-50 dark:bg-[#1a1a1a]">
-                        <div className="flex items-center gap-4">
-                          <div className="w-20 h-20 bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] rounded-full p-1 shadow-lg shrink-0">
-                            <img src={medallionPreview} alt="Medalla" className="w-full h-full object-cover rounded-full shadow-inner" style={{ objectPosition: `center ${imageOffsetY}%` }} />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="block text-sm font-bold text-green-600 uppercase tracking-widest">Encuadre Manual</span>
-                            <span className="block text-xs text-gray-500 mt-1 mb-2">Desliza para centrar tu foto</span>
-                            <input 
-                              type="range" 
-                              min="0" 
-                              max="100" 
-                              value={imageOffsetY} 
-                              onChange={(e) => setImageOffsetY(parseInt(e.target.value))}
-                              className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#d32f2f]"
-                            />
-                          </div>
+                      <input 
+                        type="text" 
+                        maxLength={MAX_CHARS * 2}
+                        value={pmLines[0].text}
+                        onChange={(e) => handlePMLineChange(0, "text", e.target.value)}
+                        className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-md px-3 py-1.5 text-sm outline-none focus:border-[#d32f2f]"
+                        placeholder="Escribe texto curvado..."
+                      />
+                      <div className="flex gap-2 mt-1">
+                        <select 
+                          value={pmLines[0].size} 
+                          onChange={(e) => handlePMLineChange(0, "size", e.target.value)}
+                          className="flex-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded px-1 py-1 text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400"
+                        >
+                          <option value="Large">Grande</option>
+                          <option value="Medium">Mediana</option>
+                          <option value="Small">Pequeña</option>
+                        </select>
+                        <select 
+                          value={pmLines[0].style} 
+                          onChange={(e) => handlePMLineChange(0, "style", e.target.value)}
+                          className="flex-1 bg-transparent border border-gray-200 dark:border-gray-800 rounded px-1 py-1 text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400"
+                        >
+                          <option value="Normal">Normal</option>
+                          <option value="Bold">Negrita</option>
+                          <option value="Italic">Cursiva</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row items-center gap-8">
+                      {!medallionPreview ? (
+                        <div className="w-full md:w-1/2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer" onClick={() => medallionInputRef.current?.click()}>
+                          <div className="w-12 h-12 rounded-full border-2 border-gray-300 mb-3 flex items-center justify-center text-gray-400">+</div>
+                          <span className="text-sm font-bold text-gray-600 dark:text-gray-300">Subir foto (JPG/PNG)</span>
+                          <input type="file" accept=".png,.jpg,.jpeg" className="hidden" ref={medallionInputRef} onChange={handleMedallionUpload} />
                         </div>
-                        <button onClick={removeMedallion} className="text-xs font-bold text-red-500 uppercase tracking-widest hover:underline px-4 py-2 border border-red-200 rounded-lg shrink-0">Cambiar Foto</button>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="w-full border border-gray-200 dark:border-gray-800 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 bg-gray-50 dark:bg-[#1a1a1a]">
+                          <div className="flex items-center gap-4">
+                            <div className="w-20 h-20 bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] rounded-full p-1 shadow-lg shrink-0">
+                              <img src={medallionPreview} alt="Medalla" className="w-full h-full object-cover rounded-full shadow-inner" style={{ objectPosition: `center ${imageOffsetY}%` }} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="block text-sm font-bold text-green-600 uppercase tracking-widest">Encuadre Manual</span>
+                              <span className="block text-xs text-gray-500 mt-1 mb-2">Desliza para centrar tu foto</span>
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max="100" 
+                                value={imageOffsetY} 
+                                onChange={(e) => setImageOffsetY(parseInt(e.target.value))}
+                                className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[#d32f2f]"
+                              />
+                            </div>
+                          </div>
+                          <button onClick={removeMedallion} className="text-xs font-bold text-red-500 uppercase tracking-widest hover:underline px-4 py-2 border border-red-200 rounded-lg shrink-0">Cambiar Foto</button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </>
               )}

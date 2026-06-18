@@ -6,15 +6,23 @@ import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 
+import CanvasEditor, { CanvasElement } from "../../../components/CanvasEditor";
+
 type LineType = "TEXT" | "ORNAMENT";
 type FontSize = "Small" | "Medium" | "Large";
 type FontStyle = "Normal" | "Bold" | "Italic";
 
 interface LineState {
+  id: string;
   type: LineType;
   text: string;
   size: FontSize;
   style: FontStyle;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex: number;
 }
 
 const ORNAMENT_SYMBOL = "❦ ❧ ❦";
@@ -24,11 +32,13 @@ export default function TrofeoPlasmaBuilder() {
   const router = useRouter();
 
   const [lines, setLines] = useState<LineState[]>([
-    { type: "TEXT", text: "Campeonato 2026", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "PRIMER LUGAR", size: "Large", style: "Bold" },
-    { type: "ORNAMENT", text: "", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "Goleador", size: "Medium", style: "Normal" },
+    { id: "l1", type: "TEXT", text: "Campeonato 2026", size: "Medium", style: "Normal", x: 20, y: 150, width: 260, height: 30, zIndex: 1 },
+    { id: "l2", type: "TEXT", text: "PRIMER LUGAR", size: "Large", style: "Bold", x: 20, y: 190, width: 260, height: 40, zIndex: 2 },
+    { id: "l3", type: "ORNAMENT", text: "", size: "Medium", style: "Normal", x: 20, y: 240, width: 260, height: 30, zIndex: 3 },
+    { id: "l4", type: "TEXT", text: "Goleador", size: "Medium", style: "Normal", x: 20, y: 290, width: 260, height: 30, zIndex: 4 },
   ]);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
@@ -83,20 +93,44 @@ export default function TrofeoPlasmaBuilder() {
     router.push("/cart");
   };
 
-  const getSvgFontSize = (sz: FontSize) => {
+  const getSvgFontSize = (sz: FontSize, totalLines: number) => {
+    const multiplier = totalLines === 1 ? 1.5 : 1;
+    let baseSize;
     switch (sz) {
-      case "Large": return "80";
-      case "Small": return "35";
-      case "Medium": default: return "55";
+      case "Large": baseSize = 28; break;
+      case "Small": baseSize = 14; break;
+      case "Medium": default: baseSize = 18; break;
     }
+    return baseSize * multiplier;
   };
 
-  const getFontStyleClass = (st: FontStyle) => {
-    switch (st) {
-      case "Bold": return "font-black font-sans"; 
-      case "Italic": return "font-serif italic";
-      case "Normal": default: return "font-serif";
-    }
+  const getCanvasElements = (): CanvasElement[] => {
+    return lines.map((line) => ({
+      id: line.id,
+      type: "text",
+      x: line.x,
+      y: line.y,
+      width: line.width,
+      height: line.height,
+      zIndex: line.zIndex,
+      text: line.type === "ORNAMENT" ? ORNAMENT_SYMBOL : line.text,
+      fontSize: line.type === "ORNAMENT" ? 24 : getSvgFontSize(line.size, activeLines.length),
+      fontStyle: line.style,
+      color: "#000000",
+      fontFamily: line.style === "Italic" ? "serif" : "sans-serif"
+    }));
+  };
+
+  const handleElementsChange = (newElements: CanvasElement[]) => {
+    const newLines = lines.map(line => {
+      const el = newElements.find(e => e.id === line.id);
+      if (el) {
+        return { ...line, x: el.x, y: el.y, width: el.width, height: el.height, zIndex: el.zIndex };
+      }
+      return line;
+    });
+    setLines(newLines);
+    setAcceptedTerms(false);
   };
 
   return (
@@ -131,45 +165,22 @@ export default function TrofeoPlasmaBuilder() {
               
               <div className="flex flex-col gap-12">
                 
-                {/* Visualización de la Placa Estática Ancha */}
+                {/* Visualización de la Placa Vertical (CanvasEditor) */}
                 <div className="w-full flex items-center justify-center p-6 bg-gray-50 dark:bg-[#161616] rounded-2xl border border-gray-200 dark:border-gray-800">
                   <div className="w-full max-w-2xl flex flex-col items-center justify-center gap-8">
                     
-                    {/* Placa Dorada Estática y Más Grande */}
-                    <div className="flex-1 w-full max-w-[550px] h-[180px] bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] border-2 border-[#fff7c2] shadow-[0_10px_30px_rgba(179,135,40,0.4)] rounded-sm p-4 flex flex-col items-center justify-center gap-0 overflow-hidden">
-                      {activeLines.length === 0 && (
-                        <div className="w-full h-full flex items-center justify-center text-black/20 font-bold text-lg uppercase tracking-widest text-center">
-                          Vista Previa de Placa
-                        </div>
-                      )}
-
-                      {activeLines.map((line, idx) => (
-                        <div key={idx} className="w-full flex-1 flex items-center justify-center overflow-hidden min-h-0">
-                          {line.type === "ORNAMENT" ? (
-                            <div className="text-black flex items-center justify-center h-full text-3xl md:text-4xl lg:text-5xl">
-                              {ORNAMENT_SYMBOL}
-                            </div>
-                          ) : (
-                            <svg viewBox="0 0 1000 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full max-h-[100%]">
-                              <text 
-                                x="50%" 
-                                y="50%" 
-                                dominantBaseline="middle" 
-                                textAnchor="middle" 
-                                fill="#000"
-                                fontSize={getSvgFontSize(line.size)}
-                                className={getFontStyleClass(line.style)}
-                                fontWeight={line.style === 'Bold' ? '900' : 'normal'}
-                                fontStyle={line.style === 'Italic' ? 'italic' : 'normal'}
-                              >
-                                {line.text}
-                              </text>
-                            </svg>
-                          )}
-                        </div>
-                      ))}
+                    {/* Placa Dorada Vertical */}
+                    <div className="flex-1 w-full max-w-[300px] h-[400px] bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] border-2 border-[#fff7c2] shadow-[0_10px_30px_rgba(179,135,40,0.4)] rounded-sm p-1 flex flex-col items-center justify-center gap-0 overflow-hidden">
+                      <CanvasEditor
+                        elements={getCanvasElements()}
+                        onChange={handleElementsChange}
+                        selectedId={selectedId}
+                        onSelect={setSelectedId}
+                        width={300}
+                        height={400}
+                        enableOverlapDetection={true}
+                      />
                     </div>
-
                   </div>
                 </div>
 

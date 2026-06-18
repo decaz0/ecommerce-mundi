@@ -7,15 +7,23 @@ import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 
 // Definición de tipos avanzados
+import CanvasEditor, { CanvasElement } from "../../../components/CanvasEditor";
+
 type LineType = "TEXT" | "ORNAMENT";
 type FontSize = "Small" | "Medium" | "Large";
 type FontStyle = "Normal" | "Bold" | "Italic";
 
 interface LineState {
+  id: string;
   type: LineType;
   text: string;
   size: FontSize;
   style: FontStyle;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex: number;
 }
 
 const ORNAMENT_SYMBOL = "❦ ❧ ❦";
@@ -25,14 +33,13 @@ export default function PlaquetaBuilder() {
   const router = useRouter();
 
   const [lines, setLines] = useState<LineState[]>([
-    { type: "TEXT", text: "Presentado a:", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "NOMBRE RECEPTOR", size: "Large", style: "Bold" },
-    { type: "ORNAMENT", text: "", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "Por tu apoyo", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "y dedicación", size: "Medium", style: "Normal" },
-    { type: "TEXT", text: "TU EMPRESA", size: "Medium", style: "Bold" },
+    { id: "l1", type: "TEXT", text: "Presentado a:", size: "Medium", style: "Normal", x: 20, y: 150, width: 260, height: 30, zIndex: 1 },
+    { id: "l2", type: "TEXT", text: "NOMBRE RECEPTOR", size: "Large", style: "Bold", x: 20, y: 190, width: 260, height: 40, zIndex: 2 },
+    { id: "l3", type: "TEXT", text: "Por su destacada labor.", size: "Small", style: "Normal", x: 20, y: 240, width: 260, height: 60, zIndex: 3 },
+    { id: "l4", type: "ORNAMENT", text: "", size: "Medium", style: "Normal", x: 20, y: 310, width: 260, height: 30, zIndex: 4 },
   ]);
 
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
@@ -93,19 +100,59 @@ export default function PlaquetaBuilder() {
     router.push("/cart");
   };
 
-  const getFontSizeClass = (sz: FontSize) => {
+  const getSvgFontSize = (sz: FontSize) => {
     switch (sz) {
-      case "Large": return "text-lg sm:text-xl";
-      case "Small": return "text-[10px] sm:text-xs";
-      case "Medium": default: return "text-xs sm:text-sm";
+      case "Large": return 28;
+      case "Small": return 14;
+      case "Medium": default: return 18;
     }
   };
-  const getFontStyleClass = (st: FontStyle) => {
-    switch (st) {
-      case "Bold": return "font-black";
-      case "Italic": return "font-serif italic";
-      case "Normal": default: return "font-serif";
+
+  const getCanvasElements = (): CanvasElement[] => {
+    const els: CanvasElement[] = [];
+    if (logoPreview) {
+      els.push({
+        id: "logo",
+        type: "image",
+        x: 100,
+        y: 20,
+        width: 100,
+        height: 100,
+        zIndex: 0,
+        src: logoPreview
+      });
     }
+
+    lines.forEach((line) => {
+      els.push({
+        id: line.id,
+        type: "text",
+        x: line.x,
+        y: line.y,
+        width: line.width,
+        height: line.height,
+        zIndex: line.zIndex,
+        text: line.type === "ORNAMENT" ? ORNAMENT_SYMBOL : line.text,
+        fontSize: line.type === "ORNAMENT" ? 24 : getSvgFontSize(line.size),
+        fontStyle: line.style,
+        color: "#000000",
+        fontFamily: line.style === "Italic" ? "serif" : "sans-serif"
+      });
+    });
+
+    return els;
+  };
+
+  const handleElementsChange = (newElements: CanvasElement[]) => {
+    const newLines = lines.map(line => {
+      const el = newElements.find(e => e.id === line.id);
+      if (el) {
+        return { ...line, x: el.x, y: el.y, width: el.width, height: el.height, zIndex: el.zIndex };
+      }
+      return line;
+    });
+    setLines(newLines);
+    setAcceptedTerms(false);
   };
 
   return (
@@ -138,24 +185,19 @@ export default function PlaquetaBuilder() {
                     className="w-full h-auto drop-shadow-2xl relative z-10 block"
                   />
 
-                  {/* OVERLAY METÁLICO (LÁMINA) */}
-                  <div className="absolute top-[22%] bottom-[22%] left-[20.5%] right-[20.5%] z-20 flex flex-col items-center justify-start py-6 px-4 overflow-hidden bg-gradient-to-br from-[#d4af37] via-[#ffe066] to-[#b38728] border border-[#b38728]/50 shadow-[inset_0_0_10px_rgba(0,0,0,0.1),0_5px_15px_rgba(0,0,0,0.5)] rounded-sm">
-                    
-                    {logoPreview && (
-                      <div className="w-full h-[25%] shrink-0 flex items-center justify-center mb-2">
-                        <img src={logoPreview} alt="Logo preview" className="max-w-[80%] max-h-full object-contain mix-blend-multiply opacity-80" />
-                      </div>
-                    )}
-                    
-                    <div className="w-full text-center font-serif text-black uppercase flex flex-col justify-center items-center gap-0.5 shrink-0">
-                      {lines.map((line, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`w-full flex items-center justify-center break-words text-center leading-tight px-1 ${line.type === "ORNAMENT" ? "text-lg" : `${getFontSizeClass(line.size)} ${getFontStyleClass(line.style)}`}`}
-                        >
-                          {line.type === "ORNAMENT" ? ORNAMENT_SYMBOL : (line.text || " ")}
-                        </div>
-                      ))}
+                  {/* OVERLAY METÁLICO */}
+                  <div className="absolute top-[22%] bottom-[22%] left-[20.5%] right-[20.5%] z-20 flex flex-col items-center justify-start gap-1 overflow-hidden border border-[#b38728]/50 shadow-[inset_0_0_10px_rgba(0,0,0,0.1),0_5px_15px_rgba(0,0,0,0.5)] rounded-sm p-2 pointer-events-none" style={{ background: "linear-gradient(to bottom right, #d4af37, #ffe066, #b38728)" }}>
+                    <div style={{ transform: 'scale(0.35)', transformOrigin: 'top center' }}>
+                      <CanvasEditor
+                        elements={getCanvasElements()}
+                        onChange={() => {}}
+                        selectedId={null}
+                        onSelect={() => {}}
+                        width={300}
+                        height={400}
+                        readOnly={true}
+                        enableOverlapDetection={false}
+                      />
                     </div>
                   </div>
                 </div>
@@ -236,14 +278,24 @@ export default function PlaquetaBuilder() {
 
                           {line.type === "TEXT" ? (
                             <div className="flex-1 flex gap-2 min-w-[200px]">
-                              <input 
-                                type="text" 
-                                maxLength={MAX_CHARS}
-                                value={line.text}
-                                onChange={(e) => handleLineChange(idx, "text", e.target.value)}
-                                className={`flex-1 bg-white dark:bg-black border ${line.text.length === MAX_CHARS ? 'border-red-400' : 'border-gray-300 dark:border-gray-700 focus:border-[#d32f2f]'} rounded-md px-3 py-1.5 text-sm outline-none`}
-                                placeholder="Escribe aquí..."
-                              />
+                              {idx === 2 ? (
+                                <textarea 
+                                  maxLength={250}
+                                  value={line.text}
+                                  onChange={(e) => handleLineChange(idx, "text", e.target.value)}
+                                  className={`flex-1 bg-white dark:bg-black border ${line.text.length === 250 ? 'border-red-400' : 'border-gray-300 dark:border-gray-700 focus:border-[#d32f2f]'} rounded-md px-3 py-1.5 text-sm outline-none min-h-[60px]`}
+                                  placeholder="Escribe el párrafo largo aquí..."
+                                />
+                              ) : (
+                                <input 
+                                  type="text" 
+                                  maxLength={MAX_CHARS}
+                                  value={line.text}
+                                  onChange={(e) => handleLineChange(idx, "text", e.target.value)}
+                                  className={`flex-1 bg-white dark:bg-black border ${line.text.length === MAX_CHARS ? 'border-red-400' : 'border-gray-300 dark:border-gray-700 focus:border-[#d32f2f]'} rounded-md px-3 py-1.5 text-sm outline-none`}
+                                  placeholder="Escribe aquí..."
+                                />
+                              )}
                             </div>
                           ) : (
                             <div className="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-800 text-gray-500 rounded-md text-sm cursor-not-allowed">
@@ -283,23 +335,16 @@ export default function PlaquetaBuilder() {
                 {/* Previsualización Derecha */}
                 <div className="w-full xl:w-2/5 flex flex-col">
                   <div className="text-sm font-bold text-[#d32f2f] uppercase mb-2">Vista Detallada</div>
-                  <div className="w-full max-w-[300px] mx-auto aspect-[5/7] bg-gradient-to-br from-[#d4af37] via-[#ffe066] to-[#b38728] border border-[#b38728] shadow-[0_10px_30px_rgba(179,135,40,0.3)] rounded-sm p-6 flex flex-col items-center justify-start gap-4 overflow-hidden relative">
-                    {logoPreview && (
-                      <div className="w-full h-24 shrink-0 flex items-center justify-center relative group border border-dashed border-[#b38728]/30">
-                        <img src={logoPreview} alt="Logo Detalle" className="max-w-[80%] max-h-full object-contain mix-blend-multiply opacity-90" />
-                        <div className="absolute -top-3 bg-[#b38728] text-white text-[8px] px-2 rounded uppercase font-bold tracking-widest hidden group-hover:block">Espacio de Logo</div>
-                      </div>
-                    )}
-
-                    <div className="w-full text-center font-serif text-black uppercase flex flex-col gap-1 shrink-0">
-                      {lines.map((line, idx) => (
-                        <div key={idx} className="w-full flex items-center justify-center px-2">
-                          <div className={`w-full flex justify-center break-words text-center leading-tight min-h-[16px] ${line.type === "ORNAMENT" ? "text-lg" : `${getFontSizeClass(line.size)} ${getFontStyleClass(line.style)}`}`}>
-                            {line.type === "ORNAMENT" ? ORNAMENT_SYMBOL : (line.text || <span className="text-black/10">Línea {idx+1}</span>)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="w-full max-w-[300px] mx-auto aspect-[5/7] bg-gradient-to-br from-[#d4af37] via-[#ffe066] to-[#b38728] border border-[#b38728] shadow-[0_10px_30px_rgba(179,135,40,0.3)] rounded-sm p-1 flex flex-col items-center justify-start overflow-hidden relative">
+                    <CanvasEditor
+                      elements={getCanvasElements()}
+                      onChange={handleElementsChange}
+                      selectedId={selectedId}
+                      onSelect={setSelectedId}
+                      width={300}
+                      height={400}
+                      enableOverlapDetection={true}
+                    />
                   </div>
                 </div>
               </div>
