@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import { guatemalaData, departments } from "../../utils/guatemala";
 
 interface CartItem {
   id: string;
@@ -23,9 +24,23 @@ export default function CheckoutPage() {
 
   // Form State
   const [shippingMethod, setShippingMethod] = useState("envio");
-  const [address, setAddress] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [department, setDepartment] = useState("Guatemala");
+  const [municipality, setMunicipality] = useState("Guatemala");
+  const [exactAddress, setExactAddress] = useState("");
+  const [reference, setReference] = useState("");
+  
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDept = e.target.value;
+    setDepartment(newDept);
+    setMunicipality(guatemalaData[newDept][0]);
+  };
+  
   const [nit, setNit] = useState("");
   const [billingName, setBillingName] = useState("");
+  const [billingAddress, setBillingAddress] = useState("");
   const [comments, setComments] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("tarjeta");
   const [cardNumber, setCardNumber] = useState("");
@@ -83,7 +98,7 @@ export default function CheckoutPage() {
                     <img src={item.image} className="w-16 h-20 object-contain bg-white dark:bg-black rounded-lg p-2 flex-shrink-0" alt={item.type} />
                     <div className="flex-1">
                       <p className="font-black uppercase text-sm">{item.type}</p>
-                      <p className="text-[10px] font-bold tracking-widest text-gray-500 mb-2">REF: {item.details}</p>
+                      <p className="text-[10px] font-bold tracking-widest text-gray-500 mb-2">SKU: {item.details}</p>
                       {item.customization.length > 0 && (
                         <div className="text-xs text-gray-600 dark:text-gray-400 font-serif italic border-l-2 border-[#d32f2f] pl-2">
                           "{item.customization.join(" / ")}"
@@ -148,15 +163,57 @@ export default function CheckoutPage() {
                 <div className="bg-[#d32f2f] text-white p-3 flex items-center gap-2 font-bold text-sm uppercase tracking-widest">
                   <span className="text-lg">📍</span> Dirección de Entrega
                 </div>
-                <div className="p-6">
-                  <input 
-                    type="text" 
-                    required 
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Ej. 24 calle 0-23 zona 1, Ciudad Capital"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm"
-                  />
+                <div className="p-6 flex flex-col gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre de quien recibe *</label>
+                      <input type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Apellidos de quien recibe *</label>
+                      <input type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de teléfono *</label>
+                    <div className="flex bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-[#d32f2f] transition-all">
+                      <div className="bg-gray-100 dark:bg-gray-800 px-3 py-3 border-r border-gray-300 dark:border-gray-700 flex items-center gap-2 select-none">
+                        <span className="text-xl leading-none">🇬🇹</span>
+                        <span className="text-sm font-bold">+502</span>
+                      </div>
+                      <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-3 bg-transparent outline-none text-sm" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Departamento *</label>
+                      <select required value={department} onChange={handleDepartmentChange} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm">
+                        {departments.map((dept) => (
+                          <option key={dept} value={dept}>{dept}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Municipio *</label>
+                      <select required value={municipality} onChange={(e) => setMunicipality(e.target.value)} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm">
+                        {guatemalaData[department]?.map((muni) => (
+                          <option key={muni} value={muni}>{muni}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dirección exacta *</label>
+                    <input type="text" required value={exactAddress} onChange={(e) => setExactAddress(e.target.value)} placeholder="Ej. 24 calle 0-23 zona 1" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm" />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Referencia o indicaciones (opcional)</label>
+                    <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Casa de portón negro, frente al parque..." className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm" />
+                  </div>
                 </div>
               </div>
             )}
@@ -166,29 +223,24 @@ export default function CheckoutPage() {
               <div className="bg-[#d32f2f] text-white p-3 flex items-center gap-2 font-bold text-sm uppercase tracking-widest">
                 <span className="text-lg">🧾</span> Información de Facturación
               </div>
-              <div className="p-6 flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">NIT</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={nit}
-                    onChange={(e) => setNit(e.target.value)}
-                    placeholder="Ej. 108194361"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm"
-                  />
+              <div className="p-6 flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-[1]">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">NIT/DPI *</label>
+                    <input type="text" required value={nit} onChange={(e) => setNit(e.target.value)} placeholder="Ej. 108194361 o C/F" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm" />
+                  </div>
+                  <div className="flex-[2]">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre / Razón social *</label>
+                    <input type="text" required value={billingName} onChange={(e) => setBillingName(e.target.value)} placeholder="Nombre en la factura" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm" />
+                  </div>
                 </div>
-                <div className="flex-[2]">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={billingName}
-                    onChange={(e) => setBillingName(e.target.value)}
-                    placeholder="Nombre en la factura"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm"
-                  />
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dirección (opcional)</label>
+                  <input type="text" value={billingAddress} onChange={(e) => setBillingAddress(e.target.value)} placeholder="Ciudad" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] focus:ring-2 focus:ring-[#d32f2f] outline-none transition-all text-sm" />
                 </div>
+                <p className="text-xs text-gray-500">
+                  Si este NIT es exento de IVA, escríbenos a <a href="mailto:conta@correo.com" className="underline text-blue-500">conta@correo.com</a>
+                </p>
               </div>
             </div>
 
@@ -216,8 +268,6 @@ export default function CheckoutPage() {
               <div className="p-4 flex flex-col gap-2">
                 {[
                   { id: "tarjeta", label: "Tarjeta de Crédito o Débito" },
-                  { id: "transferencia", label: "Transferencia bancaria (Industrial, Banrural, BAC)" },
-                  { id: "efectivo", label: "Efectivo en Entrega" },
                   { id: "cuotas", label: "Cuotas (Cualquier tarjeta)" }
                 ].map((method) => (
                   <label key={method.id} className={`flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition-colors ${paymentMethod === method.id ? 'border-[#d32f2f] bg-orange-50 dark:bg-orange-900/10' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-900'}`}>
@@ -278,7 +328,7 @@ export default function CheckoutPage() {
                           <p className="font-black text-[#d32f2f]">Q{item.price.toFixed(2)}</p>
                         </div>
                       </div>
-                      <p className="text-[10px] font-bold tracking-widest text-gray-500 mb-2">REF: {item.details}</p>
+                      <p className="text-[10px] font-bold tracking-widest text-gray-500 mb-2">SKU: {item.details}</p>
                       {item.customization.length > 0 && (
                         <div className="text-xs text-gray-600 dark:text-gray-400 font-serif italic border-l-2 border-[#d32f2f] pl-2">
                           "{item.customization.join(" / ")}"

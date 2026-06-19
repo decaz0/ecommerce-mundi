@@ -17,6 +17,7 @@ export interface CanvasElement {
   text?: string;
   fontSize?: number;
   isCurved?: boolean;
+  curveDirection?: "up" | "down";
   color?: string;
   fontFamily?: string;
   fontStyle?: "Normal" | "Bold" | "Italic";
@@ -150,7 +151,14 @@ const DraggableElement: React.FC<DraggableProps> = ({ element, isSelected, onSel
 
       {element.type === "text" && element.isCurved && (
         <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-          <path id={`curve-${element.id}`} d={`M 0,${element.height / 2} A ${element.width / 2},${element.width / 2} 0 0,1 ${element.width},${element.height / 2}`} fill="transparent" />
+          <path 
+            id={`curve-${element.id}`} 
+            d={element.curveDirection === 'down' 
+              ? `M 0,0 A ${element.width / 2},${element.height} 0 0,0 ${element.width},0`
+              : `M 0,${element.height} A ${element.width / 2},${element.height} 0 0,1 ${element.width},${element.height}`
+            } 
+            fill="transparent" 
+          />
           <text fontSize={element.fontSize || 24} fill={element.text ? (element.color || '#000') : (readOnly ? 'transparent' : 'transparent')} fontWeight={fontWeight} fontStyle={fontStyleCss} fontFamily={element.fontFamily || 'serif'}>
             <textPath href={`#curve-${element.id}`} startOffset="50%" textAnchor="middle">
               {element.text ? element.text : (readOnly ? "" : "")}
@@ -214,103 +222,8 @@ export default function CanvasEditor({
     onSelect(null);
   };
 
-  const checkOverlaps = () => {
-    if (!enableOverlapDetection || readOnly) return;
-    
-    // Validar intersección de bounding boxes
-    for (let i = 0; i < elements.length; i++) {
-      for (let j = i + 1; j < elements.length; j++) {
-        const a = elements[i];
-        const b = elements[j];
-        
-        // Ignorar si uno no tiene contenido real
-        if (a.type === 'text' && !a.text) continue;
-        if (b.type === 'text' && !b.text) continue;
-        if (a.type === 'image' && !a.src) continue;
-        if (b.type === 'image' && !b.src) continue;
-
-        const aRight = a.x + a.width;
-        const aBottom = a.y + a.height;
-        const bRight = b.x + b.width;
-        const bBottom = b.y + b.height;
-
-        const isOverlapping = !(
-          aRight < b.x || 
-          a.x > bRight || 
-          aBottom < b.y || 
-          a.y > bBottom
-        );
-
-        if (isOverlapping) {
-          const idToFix = a.id === selectedId ? a.id : (b.id === selectedId ? b.id : a.id);
-          setOverlappingElementId(idToFix);
-          if ((a.type === 'text' && b.type === 'image') || (a.type === 'image' && b.type === 'text')) {
-            setOverlapWarning("Tu texto está sobrepuesto sobre una imagen.");
-            return;
-          } else {
-            setOverlapWarning("Tu texto está sobrepuesto sobre otro texto.");
-            return;
-          }
-        }
-      }
-    }
-  };
-
-  const handleFixOverlap = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!overlappingElementId) {
-      setOverlapWarning(null);
-      return;
-    }
-
-    const elemToFix = elements.find(el => el.id === overlappingElementId);
-    if (!elemToFix) {
-      setOverlapWarning(null);
-      return;
-    }
-
-    const stepY = 10;
-    const stepX = 10;
-    let found = false;
-    let bestX = elemToFix.x;
-    let bestY = elemToFix.y;
-
-    for (let y = 10; y < height - elemToFix.height; y += stepY) {
-      for (let x = 10; x < width - elemToFix.width; x += stepX) {
-        let collision = false;
-        for (const other of elements) {
-          if (other.id === overlappingElementId) continue;
-          if ((other.type === 'text' && !other.text) || (other.type === 'image' && !other.src)) continue;
-
-          const aRight = x + elemToFix.width;
-          const aBottom = y + elemToFix.height;
-          const bRight = other.x + other.width;
-          const bBottom = other.y + other.height;
-
-          if (!(aRight < other.x || x > bRight || aBottom < other.y || y > bBottom)) {
-            collision = true;
-            break;
-          }
-        }
-        if (!collision) {
-          bestX = x;
-          bestY = y;
-          found = true;
-          break;
-        }
-      }
-      if (found) break;
-    }
-
-    if (found) {
-      handleElementChange({ ...elemToFix, x: bestX, y: bestY });
-      setOverlapWarning(null);
-      setOverlappingElementId(null);
-    } else {
-      setOverlapWarning("No se puede corregir ya que no cuenta con espacio libre. Haz el texto o imagen más pequeño, o déjalo como está.");
-      setOverlappingElementId(null);
-    }
-  };
+  const checkOverlaps = () => {};
+  const handleFixOverlap = (e: React.MouseEvent) => {};
 
   return (
     <div 
@@ -329,27 +242,6 @@ export default function CanvasEditor({
       <div className="absolute inset-0 pointer-events-none z-0">
         {backgroundElement}
       </div>
-
-      {/* Alerta de colisión */}
-      {overlapWarning && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white text-base sm:text-xl px-8 py-6 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-6 w-[95%] max-w-lg border-4 border-red-400">
-          <span className="font-black text-2xl leading-tight">{overlapWarning}</span>
-          <div className="flex gap-4 w-full">
-            <button 
-              className="flex-1 bg-white text-red-600 px-4 py-3 rounded-xl font-black hover:bg-gray-100 transition-colors shadow-lg text-lg uppercase"
-              onClick={(e) => { e.stopPropagation(); setOverlapWarning(null); }}
-            >
-              Dejarlo así
-            </button>
-            <button 
-              className="flex-1 bg-red-800 text-white px-4 py-3 rounded-xl font-black hover:bg-red-900 transition-colors shadow-lg text-lg uppercase border-2 border-red-500"
-              onClick={handleFixOverlap}
-            >
-              Arreglarlo
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Elementos interactivos ordenados por zIndex */}
       {elements.sort((a, b) => a.zIndex - b.zIndex).map((el) => (

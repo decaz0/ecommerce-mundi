@@ -7,7 +7,7 @@ interface BoundingBoxEditorProps {
   variantId: string;
   imageUrl: string;
   initialArea?: { x: number; y: number; width: number; height: number } | null;
-  onSaveAction: (variantId: string, area: string | null) => Promise<void>;
+  onSaveAction: (variantId: string, area: string | null) => Promise<any>;
 }
 
 export default function BoundingBoxEditor({ variantId, imageUrl, initialArea, onSaveAction }: BoundingBoxEditorProps) {

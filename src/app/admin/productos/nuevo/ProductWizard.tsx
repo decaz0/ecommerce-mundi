@@ -23,6 +23,7 @@ export default function ProductWizard({ catalogs, existingProducts }: any) {
   const [productName, setProductName] = useState("");
   const [productSku, setProductSku] = useState("");
   const [productDescription, setProductDescription] = useState("");
+  const [categoryId, setCategoryId] = useState("");
 
   // --- PASO 2: Múltiples Tamaños ---
   const [sizes, setSizes] = useState<string[]>([""]);
@@ -115,6 +116,7 @@ export default function ProductWizard({ catalogs, existingProducts }: any) {
   const handleNext = () => {
     if (step === 1) {
       if (isNewProduct && (!productName || !productSku)) return alert("Completa el nombre y SKU del producto");
+      if (isNewProduct && !categoryId) return alert("Selecciona una categoría");
       if (!isNewProduct && !baseProductId) return alert("Selecciona un producto existente");
     }
     if (step === 2 && validSizes.length === 0) return alert("Agrega al menos un tamaño");
@@ -168,7 +170,7 @@ export default function ProductWizard({ catalogs, existingProducts }: any) {
       const payload = {
         isNewProduct: updatedVariants.indexOf(v) === 0 ? isNewProduct : false, // Solo crear producto en la primera
         productData: isNewProduct
-          ? { name: productName, sku: productSku, description: productDescription }
+          ? { name: productName, sku: productSku, description: productDescription, categoryId }
           : { id: baseProductId },
         variantBase: { size: v.size, colorId: v.colorId, figureId: v.figureId, baseTypeId: v.baseTypeId },
         textConfig: hasText ? { typographies: selectedTypographies, textLines } : null,
@@ -185,7 +187,7 @@ export default function ProductWizard({ catalogs, existingProducts }: any) {
     const payload = {
       isNewProduct,
       productData: isNewProduct
-        ? { name: productName, sku: productSku, description: productDescription }
+        ? { name: productName, sku: productSku, description: productDescription, categoryId }
         : { id: baseProductId },
       textConfig: hasText ? { typographies: selectedTypographies, textLines } : null,
       generatedVariants: updatedVariants,
@@ -289,6 +291,15 @@ export default function ProductWizard({ catalogs, existingProducts }: any) {
                 <div>
                   <label className="block text-sm font-semibold mb-1">SKU Base *</label>
                   <input value={productSku} onChange={e => setProductSku(e.target.value.toUpperCase())} className="w-full border rounded-lg p-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500" placeholder="TRF-CDM" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Categoría *</label>
+                  <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option value="">Selecciona una categoría...</option>
+                    {catalogs.categories?.map((cat: any) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-1">Descripción</label>

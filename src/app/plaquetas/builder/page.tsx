@@ -1,97 +1,176 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
-
-// Definición de tipos avanzados
 import CanvasEditor, { CanvasElement } from "../../../components/CanvasEditor";
 
-type LineType = "TEXT" | "ORNAMENT";
-type FontSize = "Small" | "Medium" | "Large";
-type FontStyle = "Normal" | "Bold" | "Italic";
-
-interface LineState {
+interface BulkRow {
   id: string;
-  type: LineType;
-  text: string;
-  size: FontSize;
-  style: FontStyle;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  zIndex: number;
+  line1: string;
+  line2: string;
+  line3: string;
+  line4: string;
 }
 
-const ORNAMENT_SYMBOL = "❦ ❧ ❦";
-const MAX_CHARS = 15;
+type PersonalizationType = "NONE" | "SAME" | "DIFFERENT";
 
-export default function PlaquetaBuilder() {
+const TEMPLATES = [
+  { id: "vacio", name: "Plantilla en Blanco", texts: ["", "", "", ""] },
+  { id: "reconocimiento", name: "Reconocimiento al Mérito", texts: ["RECONOCIMIENTO", "AL MÉRITO", "Por su inquebrantable dedicación, liderazgo excepcional y contribuciones invaluables que han dejado una huella imborrable en nuestra organización. Su compromiso es inspiración para todos.", "OCTUBRE 2026"] },
+  { id: "agradecimiento", name: "Agradecimiento", texts: ["EN PROFUNDO", "AGRADECIMIENTO A", "Por su apoyo incondicional y colaboración constante en el desarrollo de nuestras metas compartidas. Sin su valiosa ayuda este logro no hubiera sido posible.", "2026"] },
+  { id: "trayectoria", name: "Trayectoria", texts: ["POR SU", "TRAYECTORIA", "En honor a 20 años de servicio excepcional, lealtad y profesionalismo continuo. Agradecemos profundamente el legado construido a lo largo de este tiempo.", "20 AÑOS"] },
+];
+
+function PlaquetaBuilderContent() {
   const router = useRouter();
 
-  const [lines, setLines] = useState<LineState[]>([
-    { id: "l1", type: "TEXT", text: "Presentado a:", size: "Medium", style: "Normal", x: 20, y: 150, width: 260, height: 30, zIndex: 1 },
-    { id: "l2", type: "TEXT", text: "NOMBRE RECEPTOR", size: "Large", style: "Bold", x: 20, y: 190, width: 260, height: 40, zIndex: 2 },
-    { id: "l3", type: "TEXT", text: "Por su destacada labor.", size: "Small", style: "Normal", x: 20, y: 240, width: 260, height: 60, zIndex: 3 },
-    { id: "l4", type: "ORNAMENT", text: "", size: "Medium", style: "Normal", x: 20, y: 310, width: 260, height: 30, zIndex: 4 },
+  // Plantilla Base (Diseño Maestro)
+  const [elements, setElements] = useState<CanvasElement[]>([
+    { id: "text-1", type: "text", text: "RECONOCIMIENTO", x: 25, y: 15, width: 250, height: 30, zIndex: 2, fontSize: 24, isCurved: false, fontFamily: 'serif', fontStyle: 'Bold', color: '#000000' },
+    { id: "text-2", type: "text", text: "AL MÉRITO", x: 25, y: 45, width: 250, height: 30, zIndex: 3, fontSize: 18, isCurved: false, fontFamily: 'serif', fontStyle: 'Normal', color: '#000000' },
+    { id: "text-3", type: "text", text: "Por su inquebrantable dedicación, liderazgo excepcional y contribuciones invaluables que han dejado una huella imborrable en nuestra organización.", x: 20, y: 85, width: 260, height: 95, zIndex: 4, fontSize: 13, isCurved: false, fontFamily: 'serif', fontStyle: 'Italic', color: '#000000' },
+    { id: "text-4", type: "text", text: "2026", x: 50, y: 185, width: 200, height: 30, zIndex: 5, fontSize: 16, isCurved: false, fontFamily: 'serif', fontStyle: 'Bold', color: '#000000' },
+    { id: "image-1", type: "image", src: "", x: 100, y: 220, width: 100, height: 100, zIndex: 1 }
   ]);
-
+  
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLineChange = (index: number, field: keyof LineState, value: any) => {
-    const newLines = [...lines];
-    newLines[index] = { ...newLines[index], [field]: value };
-    if (field === "type" && value === "ORNAMENT") {
-      newLines[index].text = "";
+  // Producción Masiva (B2B)
+  const [personalizationType, setPersonalizationType] = useState<PersonalizationType>("SAME");
+  const [quantity, setQuantity] = useState<number>(1);
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>([{ id: "1", line1: "RECONOCIMIENTO", line2: "AL MÉRITO", line3: "Por su inquebrantable dedicación, liderazgo excepcional y contribuciones invaluables que han dejado una huella imborrable en nuestra organización.", line4: "2026" }]);
+
+  // Vista Previa
+  const [previewRowId, setPreviewRowId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (quantity > bulkRows.length) {
+      const newRows = [...bulkRows];
+      for (let i = bulkRows.length; i < quantity; i++) {
+        newRows.push({ id: (i + 1).toString(), line1: "", line2: "", line3: "", line4: "" });
+      }
+      setBulkRows(newRows);
+    } else if (quantity < bulkRows.length) {
+      setBulkRows(bulkRows.slice(0, quantity));
     }
-    setLines(newLines);
-    setAcceptedTerms(false);
+  }, [quantity]);
+
+  const applyTemplate = (templateId: string) => {
+    const tpl = TEMPLATES.find(t => t.id === templateId);
+    if (!tpl) return;
+    
+    setElements(elements.map(el => {
+      if (el.id === "text-1") return { ...el, text: tpl.texts[0] };
+      if (el.id === "text-2") return { ...el, text: tpl.texts[1] };
+      if (el.id === "text-3") return { ...el, text: tpl.texts[2] };
+      if (el.id === "text-4") return { ...el, text: tpl.texts[3] };
+      return el;
+    }));
+
+    const newRows = [...bulkRows];
+    newRows[0] = { ...newRows[0], line1: tpl.texts[0], line2: tpl.texts[1], line3: tpl.texts[2], line4: tpl.texts[3] };
+    setBulkRows(newRows);
+    setPreviewRowId(null);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpdateTemplate = (id: string, updates: Partial<CanvasElement>) => {
+    setElements(elements.map(el => {
+      if (el.id === id) {
+        if (id !== "text-3" && updates.text && updates.text.length > 25) return el;
+        if (id === "text-3" && updates.text && updates.text.length > 250) return el;
+        return { ...el, ...updates };
+      }
+      return el;
+    }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.includes("png")) {
-      alert("¡ATENCIÓN! Solo se aceptan archivos PNG con fondo transparente. Los archivos JPG imprimirán cuadros blancos o negros en tu lámina.");
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        handleUpdateTemplate("image-1", { src: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
     }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setLogoPreview(event.target?.result as string);
-      setAcceptedTerms(false);
-    };
-    reader.readAsDataURL(file);
   };
 
-  const removeLogo = () => {
-    setLogoPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const handleMasterChange = (field: "text-1" | "text-2" | "text-3" | "text-4", value: string) => {
+    if (field !== "text-3" && value.length > 25) return;
+    if (field === "text-3" && value.length > 250) return;
+    handleUpdateTemplate(field, { text: value });
+    setPreviewRowId(null);
+    
+    if (personalizationType === "SAME") {
+      const newRows = [...bulkRows];
+      const keyMap: Record<string, keyof BulkRow> = {
+        "text-1": "line1",
+        "text-2": "line2",
+        "text-3": "line3",
+        "text-4": "line4"
+      };
+      newRows[0] = { ...newRows[0], [keyMap[field]]: value };
+      setBulkRows(newRows);
+    }
   };
 
-  const isCustomizing = lines.some(l => l.type === "ORNAMENT" || l.text.trim().length > 0) || logoPreview !== null;
-  const isCartReady = !isCustomizing || acceptedTerms;
+  const handleBulkChange = (index: number, field: keyof BulkRow, value: string) => {
+    if (field !== "line3" && value.length > 25) return;
+    if (field === "line3" && value.length > 250) return;
+    const newRows = [...bulkRows];
+    newRows[index] = { ...newRows[index], [field]: value };
+    setBulkRows(newRows);
+
+    if (previewRowId === newRows[index].id) {
+       const fieldIdMap: Record<string, string> = { "line1": "text-1", "line2": "text-2", "line3": "text-3", "line4": "text-4" };
+       handleUpdateTemplate(fieldIdMap[field], { text: value });
+    }
+  };
+
+  const copyToAll = (field: keyof BulkRow) => {
+    const firstValue = bulkRows[0][field];
+    setBulkRows(bulkRows.map(row => ({ ...row, [field]: firstValue })));
+  };
+
+  const viewRowInMaster = (row: BulkRow) => {
+    setPreviewRowId(row.id);
+    setElements(elements.map(el => {
+      if (el.id === "text-1") return { ...el, text: row.line1 };
+      if (el.id === "text-2") return { ...el, text: row.line2 };
+      if (el.id === "text-3") return { ...el, text: row.line3 };
+      if (el.id === "text-4") return { ...el, text: row.line4 };
+      return el;
+    }));
+  };
 
   const handleAddToCart = () => {
-    if (!isCartReady) return;
+    if (!acceptedTerms) {
+      alert("Por favor, acepta la garantía marcando la casilla antes de continuar.");
+      return;
+    }
+
+    const variations = personalizationType === "NONE" 
+      ? bulkRows.map(() => ({ color: "Oro", lines: ["", "", "", ""] }))
+      : personalizationType === "SAME"
+      ? bulkRows.map(() => ({ color: "Oro", lines: [bulkRows[0].line1, bulkRows[0].line2, bulkRows[0].line3, bulkRows[0].line4] }))
+      : bulkRows.map(row => ({ color: "Oro", lines: [row.line1, row.line2, row.line3, row.line4] }));
 
     const cartItem = {
       id: Date.now().toString(),
       type: "Plaqueta Premium MDF",
-      details: "PLQ-MDF-ORO",
-      price: 150, 
+      details: `PLQ-MDF-ORO Lote x${quantity}`,
+      price: 150,
+      quantity: quantity,
       image: "/categorias/plaqueta.png",
-      customization: [
-        ...(logoPreview ? ["[LOGO INCLUIDO]"] : []),
-        ...lines.map(l => l.type === "ORNAMENT" ? "[Ornamenta]" : l.text).filter(t => t.trim().length > 0)
-      ],
+      canvasElements: elements,
+      customization: [],
+      variations: variations,
+      personalizationType
     };
 
     const existingCart = JSON.parse(localStorage.getItem("premia_cart") || "[]");
@@ -100,300 +179,311 @@ export default function PlaquetaBuilder() {
     router.push("/cart");
   };
 
-  const getSvgFontSize = (sz: FontSize) => {
-    switch (sz) {
-      case "Large": return 28;
-      case "Small": return 14;
-      case "Medium": default: return 18;
-    }
-  };
+  const masterLine1 = elements.find(el => el.id === "text-1")?.text || "";
+  const masterLine2 = elements.find(el => el.id === "text-2")?.text || "";
+  const masterLine3 = elements.find(el => el.id === "text-3")?.text || "";
+  const masterLine4 = elements.find(el => el.id === "text-4")?.text || "";
 
-  const getCanvasElements = (): CanvasElement[] => {
-    const els: CanvasElement[] = [];
-    if (logoPreview) {
-      els.push({
-        id: "logo",
-        type: "image",
-        x: 100,
-        y: 20,
-        width: 100,
-        height: 100,
-        zIndex: 0,
-        src: logoPreview
-      });
-    }
-
-    lines.forEach((line) => {
-      els.push({
-        id: line.id,
-        type: "text",
-        x: line.x,
-        y: line.y,
-        width: line.width,
-        height: line.height,
-        zIndex: line.zIndex,
-        text: line.type === "ORNAMENT" ? ORNAMENT_SYMBOL : line.text,
-        fontSize: line.type === "ORNAMENT" ? 24 : getSvgFontSize(line.size),
-        fontStyle: line.style,
-        color: "#000000",
-        fontFamily: line.style === "Italic" ? "serif" : "sans-serif"
-      });
+  const StaticPlaqueta = ({ line1, line2, line3, line4 }: { line1: string, line2: string, line3: string, line4: string }) => {
+    let computedElements = elements.map(el => {
+      if (el.id === "text-1") return { ...el, text: line1 };
+      if (el.id === "text-2") return { ...el, text: line2 };
+      if (el.id === "text-3") return { ...el, text: line3 };
+      if (el.id === "text-4") return { ...el, text: line4 };
+      return el;
     });
 
-    return els;
-  };
+    const textElements = computedElements.filter(el => el.type === "text" && el.text);
+    if (textElements.length === 1) {
+      const textEl = textElements[0];
+      const newHeight = textEl.height * 1.5;
+      computedElements = computedElements.map(el => 
+        el.id === textEl.id 
+        ? { ...el, y: 375 / 2 - (newHeight / 2), height: newHeight, fontSize: (el.fontSize || 24) * 1.5, width: 260, x: 20 } 
+        : el
+      );
+    }
 
-  const handleElementsChange = (newElements: CanvasElement[]) => {
-    const newLines = lines.map(line => {
-      const el = newElements.find(e => e.id === line.id);
-      if (el) {
-        return { ...line, x: el.x, y: el.y, width: el.width, height: el.height, zIndex: el.zIndex };
-      }
-      return line;
-    });
-    setLines(newLines);
-    setAcceptedTerms(false);
+    return (
+      <div className="relative w-32 h-40">
+        <img src="/categorias/plaqueta.png" className="absolute inset-0 w-full h-full object-contain opacity-30" alt="" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-[100px] h-[125px] rounded-sm border border-[#b38728]/50 shadow-[inset_0_0_10px_rgba(0,0,0,0.1),0_5px_15px_rgba(0,0,0,0.5)] overflow-hidden relative bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728]">
+            <div className="absolute top-0 left-0 origin-top-left" style={{ transform: 'scale(calc(100 / 300))' }}>
+              <CanvasEditor 
+                elements={computedElements}
+                onChange={() => {}}
+                selectedId={null}
+                onSelect={() => {}}
+                width={300}
+                height={375}
+                readOnly={true}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-black dark:text-white flex flex-col">
-      <Header />
-      
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-          <Link href="/" className="hover:text-[#d32f2f] transition-colors">Inicio</Link> 
-          <span>/</span> 
-          <Link href="/plaquetas" className="hover:text-[#d32f2f] transition-colors">Plaquetas MDF</Link>
-          <span>/</span> 
-          <span className="text-black dark:text-white">Constructor</span>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-12">
-          {/* IZQUIERDA: Plaqueta Visualizador */}
-          <div className="w-full lg:w-[35%]">
-            <div className="sticky top-24 bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-800">
-                <h1 className="text-2xl font-black uppercase tracking-tight">Plaqueta Madera MDF</h1>
-                <p className="text-gray-500 text-sm">Previsualización de Grabado</p>
-              </div>
-
-              <div className="relative flex items-center justify-center p-8 bg-gray-100 dark:bg-[#1a1a1a]">
-                <div className="relative w-full max-w-sm mx-auto">
-                  <img 
-                    src="/categorias/plaqueta.png" 
-                    alt="Plaqueta Base" 
-                    className="w-full h-auto drop-shadow-2xl relative z-10 block"
-                  />
-
-                  {/* OVERLAY METÁLICO */}
-                  <div className="absolute top-[22%] bottom-[22%] left-[20.5%] right-[20.5%] z-20 flex flex-col items-center justify-start gap-1 overflow-hidden border border-[#b38728]/50 shadow-[inset_0_0_10px_rgba(0,0,0,0.1),0_5px_15px_rgba(0,0,0,0.5)] rounded-sm p-2 pointer-events-none" style={{ background: "linear-gradient(to bottom right, #d4af37, #ffe066, #b38728)" }}>
-                    <div style={{ transform: 'scale(0.35)', transformOrigin: 'top center' }}>
-                      <CanvasEditor
-                        elements={getCanvasElements()}
-                        onChange={() => {}}
-                        selectedId={null}
-                        onSelect={() => {}}
-                        width={300}
-                        height={400}
-                        readOnly={true}
-                        enableOverlapDetection={false}
-                      />
-                    </div>
-                  </div>
-                </div>
+    <div className="flex flex-col gap-8 relative pb-32">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* IZQUIERDA: DISEÑO MAESTRO Y LISTA B2B */}
+        <div className="lg:col-span-2 flex flex-col gap-8">
+          
+          <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-gray-800 p-8 shadow-xl">
+            <div className="flex justify-between items-start mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
+              <div>
+                <h2 className="text-xl font-black uppercase tracking-tight text-[#d32f2f] flex items-center gap-3">
+                  1. Diseño Maestro: Plaqueta
+                  {previewRowId && <span className="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded font-bold shadow-sm">Viendo Fila {previewRowId}</span>}
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">Crea la plantilla base. Luego, aplicarás los textos masivamente. Puedes mover y redimensionar los elementos libremente.</p>
               </div>
             </div>
-          </div>
 
-          {/* DERECHA: Editor */}
-          <div className="w-full lg:w-[65%] flex flex-col gap-8 pb-20">
-            
-            <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-gray-800 p-8 shadow-xl">
-              <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Editor de Plaqueta</h2>
-              <p className="text-gray-500 mb-8">Sube tu logo y utiliza nuestro editor avanzado para configurar tipografías y estilos.</p>
-              
-              <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500 p-4 mb-8 rounded-r-lg">
-                <h3 className="text-sm font-black text-yellow-800 dark:text-yellow-500 uppercase tracking-widest mb-1">⚠️ IMPORTANTE SOBRE IMÁGENES</h3>
-                <ul className="text-xs text-yellow-700 dark:text-yellow-600 list-disc ml-4 space-y-1">
-                  <li>Tu logo <strong>DEBE SER FORMATO PNG SIN FONDO (Transparente)</strong>. Si subes un JPG, se imprimirá un cuadro en tu placa.</li>
-                  <li><strong>Calidad de Imagen:</strong> El reconocimiento se imprimirá exactamente con la calidad que subas.</li>
-                </ul>
-              </div>
+            <div className="flex justify-between items-center bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl mb-8 border border-gray-200 dark:border-gray-800">
+              <span className="text-sm font-bold uppercase text-gray-500">Usar Plantilla Rápida:</span>
+              <select onChange={(e) => applyTemplate(e.target.value)} className="bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded p-2 text-sm font-bold outline-none">
+                <option value="">Selecciona una opción...</option>
+                {TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
 
-              <div className="flex flex-col xl:flex-row gap-12">
-                {/* Formulario */}
-                <div className="w-full xl:w-3/5 flex flex-col gap-6">
-                  
-                  {/* LOGO */}
-                  <div>
-                    <div className="text-sm font-bold text-[#d32f2f] uppercase mb-2">1. Logotipo (Opcional)</div>
-                    {!logoPreview ? (
-                      <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <span className="text-sm font-bold text-gray-600 dark:text-gray-300">Haz clic para subir PNG</span>
-                        <input type="file" accept=".png,.jpg,.jpeg" className="hidden" ref={fileInputRef} onChange={handleLogoUpload} />
-                      </div>
-                    ) : (
-                      <div className="border-2 border-green-500 rounded-xl p-4 bg-green-50 dark:bg-green-900/10 flex flex-col gap-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-white rounded border border-gray-200 p-1">
-                              <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
-                            </div>
-                            <span className="text-sm font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">Logo Subido Exitosamente</span>
-                          </div>
-                          <button onClick={removeLogo} className="text-xs font-bold text-white bg-red-500 px-3 py-1 rounded uppercase tracking-widest hover:bg-red-600">Eliminar</button>
-                        </div>
-                        <div className="bg-yellow-400 text-black text-[10px] font-black uppercase tracking-widest p-2 rounded text-center">
-                          Un especialista en diseño ajustará tu arte para asegurar un encaje perfecto dentro de tu reconocimiento.
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="flex flex-col gap-4">
+                <button onClick={() => fileInputRef.current?.click()} className="py-3 bg-black dark:bg-white text-white dark:text-black font-bold uppercase text-xs rounded-xl hover:scale-105 transition-transform w-full">
+                  Subir Logo PNG
+                </button>
+                <input type="file" accept="image/png" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
 
-                  {/* LÍNEAS DE TEXTO */}
-                  <div className="flex flex-col gap-4">
-                    <div className="text-sm font-bold text-[#d32f2f] uppercase border-b pb-2">2. Texto del Reconocimiento</div>
-                    
-                    {lines.map((line, idx) => (
-                      <div key={idx} className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-[#161616] rounded-xl border border-gray-200 dark:border-gray-800">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-500">Línea {idx + 1}</span>
-                          <span className={`text-[10px] font-bold ${line.text.length === MAX_CHARS ? 'text-red-500' : 'text-gray-400'}`}>
-                            {line.type === "TEXT" ? `${line.text.length} / ${MAX_CHARS}` : ""}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <select 
-                            value={line.type} 
-                            onChange={(e) => handleLineChange(idx, "type", e.target.value)}
-                            className="bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-md px-2 py-1.5 text-xs outline-none"
-                          >
-                            <option value="TEXT">Texto</option>
-                            <option value="ORNAMENT">Ornamenta</option>
-                          </select>
-
-                          {line.type === "TEXT" ? (
-                            <div className="flex-1 flex gap-2 min-w-[200px]">
-                              {idx === 2 ? (
-                                <textarea 
-                                  maxLength={250}
-                                  value={line.text}
-                                  onChange={(e) => handleLineChange(idx, "text", e.target.value)}
-                                  className={`flex-1 bg-white dark:bg-black border ${line.text.length === 250 ? 'border-red-400' : 'border-gray-300 dark:border-gray-700 focus:border-[#d32f2f]'} rounded-md px-3 py-1.5 text-sm outline-none min-h-[60px]`}
-                                  placeholder="Escribe el párrafo largo aquí..."
-                                />
-                              ) : (
-                                <input 
-                                  type="text" 
-                                  maxLength={MAX_CHARS}
-                                  value={line.text}
-                                  onChange={(e) => handleLineChange(idx, "text", e.target.value)}
-                                  className={`flex-1 bg-white dark:bg-black border ${line.text.length === MAX_CHARS ? 'border-red-400' : 'border-gray-300 dark:border-gray-700 focus:border-[#d32f2f]'} rounded-md px-3 py-1.5 text-sm outline-none`}
-                                  placeholder="Escribe aquí..."
-                                />
-                              )}
-                            </div>
-                          ) : (
-                            <div className="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-800 text-gray-500 rounded-md text-sm cursor-not-allowed">
-                              {ORNAMENT_SYMBOL}
-                            </div>
-                          )}
-                        </div>
-
-                        {line.type === "TEXT" && (
-                          <div className="flex gap-2 mt-1">
+                <div className="bg-gray-50 dark:bg-[#1a1a1a] p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col gap-3">
+                  {[
+                    { id: '1', max: 25 },
+                    { id: '2', max: 25 },
+                    { id: '3', max: 250, isTextarea: true },
+                    { id: '4', max: 25 }
+                  ].map((field) => {
+                    const fieldId = `text-${field.id}` as any;
+                    const val = eval(`masterLine${field.id}`);
+                    return (
+                      <div key={field.id}>
+                        <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase mb-1 items-center">
+                          <span className="flex items-center gap-2">
+                            Línea {field.id}
                             <select 
-                              value={line.size} 
-                              onChange={(e) => handleLineChange(idx, "size", e.target.value)}
-                              className="bg-transparent border border-gray-200 dark:border-gray-800 rounded px-2 py-1 text-[10px] uppercase text-gray-600 dark:text-gray-400"
-                            >
-                              <option value="Large">Grande</option>
-                              <option value="Medium">Mediana</option>
-                              <option value="Small">Pequeña</option>
-                            </select>
-                            <select 
-                              value={line.style} 
-                              onChange={(e) => handleLineChange(idx, "style", e.target.value)}
-                              className="bg-transparent border border-gray-200 dark:border-gray-800 rounded px-2 py-1 text-[10px] uppercase text-gray-600 dark:text-gray-400"
+                              className="bg-gray-200 dark:bg-gray-800 text-black dark:text-white rounded px-1 outline-none ml-2"
+                              value={elements.find(el => el.id === fieldId)?.fontStyle || 'Normal'}
+                              onChange={(e) => handleUpdateTemplate(fieldId, { fontStyle: e.target.value as any })}
                             >
                               <option value="Normal">Normal</option>
                               <option value="Bold">Negrita</option>
                               <option value="Italic">Cursiva</option>
                             </select>
-                          </div>
+                          </span>
+                          <span className={val.length === field.max ? 'text-red-500' : ''}>{val.length}/{field.max}</span>
+                        </div>
+                        {field.isTextarea ? (
+                          <textarea maxLength={field.max} rows={3} value={val} onChange={(e) => handleMasterChange(fieldId, e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none text-sm resize-none" />
+                        ) : (
+                          <input type="text" maxLength={field.max} value={val} onChange={(e) => handleMasterChange(fieldId, e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 rounded px-3 py-2 outline-none text-sm" />
                         )}
                       </div>
-                    ))}
-                  </div>
-
+                    )
+                  })}
                 </div>
+              </div>
 
-                {/* Previsualización Derecha */}
-                <div className="w-full xl:w-2/5 flex flex-col">
-                  <div className="text-sm font-bold text-[#d32f2f] uppercase mb-2">Vista Detallada</div>
-                  <div className="w-full max-w-[300px] mx-auto aspect-[5/7] bg-gradient-to-br from-[#d4af37] via-[#ffe066] to-[#b38728] border border-[#b38728] shadow-[0_10px_30px_rgba(179,135,40,0.3)] rounded-sm p-1 flex flex-col items-center justify-start overflow-hidden relative">
-                    <CanvasEditor
-                      elements={getCanvasElements()}
-                      onChange={handleElementsChange}
-                      selectedId={selectedId}
-                      onSelect={setSelectedId}
-                      width={300}
-                      height={400}
-                      enableOverlapDetection={true}
-                    />
-                  </div>
+              <div className="flex justify-center items-center relative">
+                <img src="/categorias/plaqueta.png" className="absolute inset-0 w-full h-full object-contain opacity-20 pointer-events-none" alt="" />
+                <div className="w-[300px] h-[375px] border border-yellow-600 shadow-[inset_0_0_10px_rgba(0,0,0,0.5),0_10px_30px_rgba(0,0,0,0.2)] overflow-hidden relative bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#b38728] z-10">
+                  <CanvasEditor 
+                    elements={elements} 
+                    onChange={setElements} 
+                    selectedId={selectedId} 
+                    onSelect={setSelectedId} 
+                    width={300} 
+                    height={375} 
+                    readOnly={false} 
+                    enableOverlapDetection={true} 
+                  />
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* VALIDACIÓN Y CARRITO */}
-            <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-gray-800 p-8 shadow-xl flex flex-col gap-6">
-              <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-6">
-                <div>
-                  <h3 className="font-black text-xl mb-1 text-gray-500">Total a Pagar</h3>
-                  <p className="text-xs text-gray-400">Incluye placa metálica y grabado.</p>
-                </div>
-                <div className="text-4xl font-black text-[#d32f2f]">Q150.00</div>
-              </div>
+          {quantity > 1 && (
+            <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-gray-800 p-8 shadow-xl">
+              <h2 className="text-xl font-black uppercase tracking-tight text-[#d32f2f] mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">2. Personalización B2B</h2>
 
-              {isCustomizing && (
-                <div className="flex items-start gap-4 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30 rounded-xl">
-                  <input 
-                    type="checkbox" 
-                    checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    className="mt-1 w-6 h-6 text-[#d32f2f] border-gray-300 rounded cursor-pointer"
-                  />
-                  <div>
-                    <p className="font-bold text-[#d32f2f]">ACEPTACIÓN DE DISEÑO Y ORTOGRAFÍA</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
-                      Confirmo que he revisado exhaustivamente todos los textos. Entiendo que mi producto será grabado <strong>exactamente</strong> como lo he configurado en los estilos.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <button 
-                disabled={!isCartReady}
-                onClick={handleAddToCart}
-                className={`w-full py-5 font-black uppercase tracking-widest rounded-xl transition-all shadow-lg text-lg ${
-                  isCartReady
-                    ? "bg-[#d32f2f] hover:bg-red-800 text-white cursor-pointer hover:scale-[1.02] active:scale-95 shadow-[0_10px_30px_rgba(211,47,47,0.3)]"
-                    : "bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
-                }`}
-              >
-                {isCartReady ? "Añadir al Carrito" : "Acepta los Términos para Continuar"}
+            <div className="flex flex-col sm:flex-row mb-8 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+              <button onClick={() => setPersonalizationType("NONE")} className={`flex-1 py-3 px-4 text-xs font-bold uppercase transition-colors ${personalizationType === "NONE" ? "bg-gray-100 dark:bg-gray-800 text-black dark:text-white border-b-2 border-[#d32f2f]" : "bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50"}`}>
+                Sin Grabado
+              </button>
+              <button onClick={() => setPersonalizationType("SAME")} className={`flex-1 py-3 px-4 text-xs font-bold uppercase transition-colors border-l border-r border-gray-200 dark:border-gray-800 ${personalizationType === "SAME" ? "bg-gray-100 dark:bg-gray-800 text-black dark:text-white border-b-2 border-[#d32f2f]" : "bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50"}`}>
+                Mismo Texto
+              </button>
+              <button onClick={() => setPersonalizationType("DIFFERENT")} className={`flex-1 py-3 px-4 text-xs font-bold uppercase transition-colors ${personalizationType === "DIFFERENT" ? "bg-gray-100 dark:bg-gray-800 text-black dark:text-white border-b-2 border-[#d32f2f]" : "bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50"}`}>
+                Texto Diferente
               </button>
             </div>
 
+            {personalizationType === "NONE" && (
+              <div className="p-10 text-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800">
+                <p className="text-sm text-gray-500">Se enviarán las plaquetas con la lámina en blanco para tu propia personalización.</p>
+              </div>
+            )}
+
+            {personalizationType === "SAME" && (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-center bg-gray-50 dark:bg-[#1a1a1a] p-8 rounded-xl border border-gray-200 dark:border-gray-800">
+                <div className="flex flex-col gap-4">
+                  {[
+                    { id: '1', max: 25 },
+                    { id: '2', max: 25 },
+                    { id: '3', max: 250, isTextarea: true },
+                    { id: '4', max: 25 }
+                  ].map((field) => (
+                    <div key={field.id}>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Línea {field.id} (Máx {field.max})</label>
+                      {field.isTextarea ? (
+                        <textarea maxLength={field.max} rows={3} value={(bulkRows[0] as any)[`line${field.id}`]} onChange={(e) => handleBulkChange(0, `line${field.id}` as keyof BulkRow, e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none resize-none" />
+                      ) : (
+                        <input type="text" maxLength={field.max} value={(bulkRows[0] as any)[`line${field.id}`]} onChange={(e) => handleBulkChange(0, `line${field.id}` as keyof BulkRow, e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <h4 className="text-[10px] font-black uppercase text-[#d32f2f]">Muestra</h4>
+                  <StaticPlaqueta line1={bulkRows[0].line1} line2={bulkRows[0].line2} line3={bulkRows[0].line3} line4={bulkRows[0].line4} />
+                </div>
+              </div>
+            )}
+
+            {personalizationType === "DIFFERENT" && (
+              <div className="flex flex-col gap-6">
+                {bulkRows.map((row, idx) => (
+                  <div key={row.id} className={`grid grid-cols-1 xl:grid-cols-2 gap-8 items-center bg-gray-50 dark:bg-[#1a1a1a] p-8 rounded-xl border transition-colors ${previewRowId === row.id ? 'border-[#d32f2f] shadow-md' : 'border-gray-200 dark:border-gray-800'}`}>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-center mb-2">
+                         <h4 className="text-sm font-black uppercase text-[#d32f2f]">Plaqueta {idx + 1}</h4>
+                         <button onClick={() => viewRowInMaster(row)} className="text-xs bg-[#d32f2f] text-white px-3 py-1 rounded font-bold shadow hover:bg-red-700 flex items-center gap-1">
+                           👁️ Ver en Maestro
+                         </button>
+                      </div>
+                      
+                      {[
+                        { id: '1', max: 25 },
+                        { id: '2', max: 25 },
+                        { id: '3', max: 250, isTextarea: true },
+                        { id: '4', max: 25 }
+                      ].map((field) => (
+                        <div className="flex gap-2" key={field.id}>
+                          <div className="flex-1">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Línea {field.id}</label>
+                            {field.isTextarea ? (
+                              <textarea maxLength={field.max} rows={3} value={(row as any)[`line${field.id}`]} onChange={(e) => handleBulkChange(idx, `line${field.id}` as keyof BulkRow, e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none resize-none" />
+                            ) : (
+                              <input type="text" maxLength={field.max} value={(row as any)[`line${field.id}`]} onChange={(e) => handleBulkChange(idx, `line${field.id}` as keyof BulkRow, e.target.value)} className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded px-3 py-2 text-sm outline-none" />
+                            )}
+                          </div>
+                          {idx === 0 && <button onClick={() => copyToAll(`line${field.id}` as keyof BulkRow)} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 text-[10px] font-bold uppercase px-3 py-2 rounded self-end h-[38px] mt-[18px]">Repetir</button>}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col items-center gap-2">
+                      <h4 className="text-[10px] font-black uppercase text-[#d32f2f]">Muestra</h4>
+                      <StaticPlaqueta line1={row.line1} line2={row.line2} line3={row.line3} line4={row.line4} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            </div>
+          )}
+        </div>
+
+        {/* DERECHA: SIDEBAR DE ORDEN */}
+        <div className="w-full lg:col-span-1">
+          <div className="bg-white dark:bg-[#111] p-10 rounded-3xl border border-gray-200 dark:border-gray-800 sticky top-24 shadow-2xl flex flex-col gap-6">
+             <h3 className="font-black text-2xl mb-2 text-[#d32f2f] uppercase tracking-tight text-center">Detalles de Orden</h3>
+             
+             <div className="relative h-96 w-full flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                <img src="/categorias/plaqueta.png" className="h-full w-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform" alt="Plaqueta" />
+             </div>
+
+             <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-500 p-4 rounded-r-lg mt-2">
+               <h3 className="text-xs font-black text-yellow-800 dark:text-yellow-500 uppercase tracking-widest mb-2">Características del Producto</h3>
+               <ul className="text-xs text-yellow-700 dark:text-yellow-600 list-disc list-inside flex flex-col gap-1">
+                 <li><strong>Material:</strong> Base de madera MDF con acabado elegante en caoba.</li>
+                 <li><strong>Placa Frontal:</strong> Lámina de aluminio dorado/plateado con impresión láser de alta duración.</li>
+                 <li><strong>Dimensiones:</strong> 9" x 12" (tamaño estándar corporativo).</li>
+               </ul>
+             </div>
+
+             <div className="flex flex-col gap-5 border-t border-gray-100 dark:border-gray-800 pt-6">
+                <div>
+                  <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">1. Modelo:</span>
+                  <div className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-gray-700 rounded-lg p-4 font-bold text-base">Plaqueta Premium MDF</div>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-gray-500 uppercase mb-2 block">2. Cantidad Total:</span>
+                  <input type="number" min="1" max="5000" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center font-black outline-none text-lg" />
+                </div>
+             </div>
+
+             <div className="text-right border-t border-gray-100 dark:border-gray-800 pt-6 mt-2">
+                <div className="text-sm font-bold text-gray-500 uppercase mb-1">Subtotal</div>
+                <div className="text-5xl font-black text-[#d32f2f]">Q{(150 * quantity).toFixed(2)}</div>
+             </div>
+             
+             <div className="flex items-start gap-4 bg-red-50 dark:bg-red-900/20 p-5 rounded-xl mt-4">
+                <input type="checkbox" id="terms_side" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1 w-6 h-6 accent-[#d32f2f]" />
+                <label htmlFor="terms_side" className="text-sm text-gray-700 dark:text-gray-300 leading-tight">
+                  <span className="font-black text-black dark:text-white uppercase block mb-1">Garantía Crown:</span> 
+                  Confirmo el diseño, modelo y la revisión ortográfica.
+                </label>
+             </div>
+             
+             <button onClick={handleAddToCart} disabled={!acceptedTerms} className="w-full py-5 mt-2 bg-[#d32f2f] hover:bg-red-700 disabled:bg-gray-400 text-white font-black uppercase text-lg rounded-xl transition-all shadow-xl hover:shadow-2xl hover:scale-[1.02]">
+                Añadir al Carrito
+             </button>
           </div>
         </div>
-      </main>
+      </div>
+    </div>
+  );
+}
 
+export default function PlaquetaBuilderPage() {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-black dark:text-white flex flex-col">
+      <Header />
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
+          <Link href="/" className="hover:text-[#d32f2f] transition-colors">Inicio</Link> 
+          <span>/</span> 
+          <Link href="/plaquetas" className="hover:text-[#d32f2f] transition-colors">Plaquetas</Link>
+          <span>/</span> 
+          <span className="text-black dark:text-white">Diseñador B2B</span>
+        </div>
+
+        <div className="bg-red-50 dark:bg-red-900/10 border-l-4 border-[#d32f2f] p-4 mb-8 rounded-r-xl">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-[#d32f2f] font-black uppercase text-sm">Flujo de Producción B2B</h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Escoge un diseño maestro para la placa frontal y elige si vas a grabar el mismo texto en todas o texto diferente.</p>
+            </div>
+          </div>
+        </div>
+
+        <Suspense fallback={<div className="h-96 flex items-center justify-center font-bold text-gray-500">Cargando personalizador...</div>}>
+          <PlaquetaBuilderContent />
+        </Suspense>
+      </main>
       <Footer />
     </div>
   );

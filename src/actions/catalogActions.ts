@@ -126,3 +126,23 @@ export async function deleteBaseType(id: string) {
     console.error(error);
   }
 }
+
+// --- CATEGORIES ---
+export async function createCategory(formData: FormData) {
+  try {
+    const name = formData.get("name") as string;
+    await prisma.category.create({ data: { name } });
+    revalidatePath("/admin/catalogos/categorias");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function deleteCategory(id: string) {
+  try {
+    await prisma.category.delete({ where: { id } });
+    revalidatePath("/admin/catalogos/categorias");
+  } catch (error) {
+    console.error(error);
+  }
+}

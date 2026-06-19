@@ -10,6 +10,7 @@ interface AuthModalProps {
 export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   const [isRegister, setIsRegister] = useState(false);
   const [nickname, setNickname] = useState("");
+  const [email, setEmail] = useState("");
 
   const handleAuth = (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
@@ -20,6 +21,13 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
     const existingNickname = localStorage.getItem("premia_nickname");
     const finalNickname = nickname.trim() ? nickname : (existingNickname || "Usuario Estrella");
     localStorage.setItem("premia_nickname", finalNickname);
+    
+    // Guardamos el email
+    if (email.trim()) {
+      localStorage.setItem("premia_email", email.trim());
+    } else if (!localStorage.getItem("premia_email")) {
+      localStorage.setItem("premia_email", "usuario@correo.com");
+    }
     
     window.dispatchEvent(new Event("auth_changed"));
     
@@ -89,6 +97,8 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
               <input
                 type="email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] focus:ring-2 focus:ring-premia-red outline-none transition-all"
                 placeholder="tu@email.com"
               />

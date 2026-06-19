@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { ReactNode } from "react";
-import { LayoutDashboard, Package, Palette, Trophy, Layers, Type, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, Palette, Trophy, Layers, Type, LogOut, FolderTree } from "lucide-react";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession();
@@ -12,6 +12,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   ];
 
   const catalogLinks = [
+    { href: "/admin/catalogos/categorias", label: "Categorías", icon: <FolderTree size={18} /> },
     { href: "/admin/catalogos/colores", label: "Colores", icon: <Palette size={18} /> },
     { href: "/admin/catalogos/figuras", label: "Figuras", icon: <Trophy size={18} /> },
     { href: "/admin/catalogos/bases", label: "Bases", icon: <Layers size={18} /> },

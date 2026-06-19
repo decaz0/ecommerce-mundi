@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import BoundingBoxEditor from "@/components/BoundingBoxEditor";
 import { saveVariantLogoArea } from "@/actions/productActions";
+import ProductEditForm from "./ProductEditForm";
+import VariantTextEditor from "./VariantTextEditor";
+import VariantImageActions from "./VariantImageActions";
 
 export default async function ProductDetailsPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const { id } = await params;
@@ -18,9 +21,13 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
           textLines: true,
         },
         orderBy: { createdAt: "asc" }
-      }
+      },
+      category: true,
     }
   });
+
+  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  const typographies = await prisma.typography.findMany({ orderBy: { name: "asc" } });
 
   if (!product) return <div className="p-8 text-center text-gray-500">Producto no encontrado.</div>;
 
@@ -39,28 +46,17 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
 
   return (
     <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <Link href="/admin/productos" className="text-premia-red hover:underline text-sm font-semibold">← Volver a Productos</Link>
-          <h1 className="text-2xl font-semibold text-gray-800 mt-2 tracking-tight">{product.name}</h1>
-          <p className="text-sm text-gray-500 font-mono mt-1">SKU Base: {product.sku}</p>
-        </div>
+      <Link href="/admin/productos" className="inline-block text-premia-red hover:underline text-sm font-semibold mb-4">← Volver a Productos</Link>
+      
+      <ProductEditForm product={product} categories={categories} />
+
+      <div className="flex justify-between items-end mb-4">
+        <h2 className="text-lg font-bold text-gray-700">Variantes del Producto ({product.variants.length})</h2>
         <Link href={`/admin/productos/nuevo`}
-          className="bg-premia-red hover:bg-premia-red-dark text-white text-sm font-bold py-3 px-6 rounded-full shadow-lg shadow-premia-red/20 transition-transform hover:scale-105">
+          className="bg-premia-red hover:bg-premia-red-dark text-white text-sm font-bold py-2.5 px-6 rounded-full shadow-lg shadow-premia-red/20 transition-transform hover:scale-105">
           + Añadir Variante
         </Link>
       </div>
-
-      {/* Description */}
-      {product.description && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6 text-sm text-gray-600">
-          {product.description}
-        </div>
-      )}
-
-      {/* Variants */}
-      <h2 className="text-lg font-bold text-gray-700 mb-4">Variantes del Producto ({product.variants.length})</h2>
 
       {product.variants.length === 0 ? (
         <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
@@ -74,12 +70,13 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
             <div key={v.id} className={`bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden transition-opacity ${!v.isActive ? 'opacity-50 grayscale' : ''}`}>
               <div className="flex flex-col md:flex-row">
                 {/* Imagen */}
-                <div className="w-full md:w-56 h-56 md:h-auto shrink-0 bg-[#121212] flex items-center justify-center relative overflow-hidden">
+                <div className="w-full md:w-56 h-56 md:h-auto shrink-0 bg-[#121212] flex items-center justify-center relative overflow-hidden group">
                   {v.imageUrl ? (
                     <img src={v.imageUrl} alt={v.sku} className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-6xl opacity-30">🏆</span>
                   )}
+                  <VariantImageActions variantId={v.id} currentImageUrl={v.imageUrl} />
                 </div>
 
                 {/* Info */}
@@ -131,14 +128,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
 
                   {/* Configuración de texto si aplica */}
                   {(v.customizationType === "TEXT_LOGO" || v.customizationType === "TEXT_ONLY") && (
-                    <div className="mt-3 text-xs text-gray-500">
-                      {v.textLines.length > 0 && (
-                        <span className="mr-3">📝 {v.textLines.length} línea(s) de texto</span>
-                      )}
-                      {v.typographies.length > 0 && (
-                        <span>🔤 {v.typographies.map(t => t.typography.name).join(", ")}</span>
-                      )}
-                    </div>
+                    <VariantTextEditor variant={v} typographies={typographies} />
                   )}
 
                   {/* Lienzo Bounding Box (Solo si admite Logo y tiene imagen) */}

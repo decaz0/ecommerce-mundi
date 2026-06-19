@@ -3,11 +3,12 @@ import Link from "next/link";
 import ProductWizard from "./ProductWizard";
 
 export default async function NewProductPage() {
-  const [colors, figures, bases, typographies, existingProducts] = await Promise.all([
+  const [colors, figures, bases, typographies, categories, existingProducts] = await Promise.all([
     prisma.color.findMany({ orderBy: { name: "asc" } }),
     prisma.figure.findMany({ orderBy: { name: "asc" } }),
     prisma.baseType.findMany({ orderBy: { name: "asc" } }),
     prisma.typography.findMany({ orderBy: { name: "asc" } }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
     prisma.product.findMany({
       include: { _count: { select: { variants: true } } },
       orderBy: { name: "asc" }
@@ -29,7 +30,7 @@ export default async function NewProductPage() {
         </div>
 
         <ProductWizard
-          catalogs={{ colors, figures, bases, typographies }}
+          catalogs={{ colors, figures, bases, typographies, categories }}
           existingProducts={existingProducts}
         />
       </div>
